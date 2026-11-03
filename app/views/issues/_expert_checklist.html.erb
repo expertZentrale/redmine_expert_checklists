@@ -1,0 +1,31 @@
+<% items = issue.expert_checklist_items.to_a %>
+<% if items.any? %>
+<% tickable = RedmineExpertChecklists.tickable?(issue) %>
+<% done, total = expert_checklist_progress(items) %>
+<hr />
+<div class="expert-checklist" data-ec-list data-issue-id="<%= issue.id %>">
+  <div class="contextual">
+    <a href="#" role="button" class="ec-toggle-done" aria-pressed="false" hidden><%= l(:label_expert_checklist_hide_done) %></a>
+  </div>
+  <p>
+    <strong><%= l(:label_expert_checklist) %></strong>
+    <span class="ec-progress" aria-live="polite" data-done="<%= done %>" data-total="<%= total %>"><%= done %>/<%= total %></span>
+  </p>
+  <ul class="ec-items">
+    <% items.each do |item| %>
+      <% if item.is_section? %>
+        <li class="ec-section" role="heading" aria-level="4" data-ec-id="<%= item.id %>"><%= expert_checklist_subject(item, issue) %></li>
+      <% else %>
+        <li class="ec-item<%= ' ec-done' if item.is_done? %>" data-ec-id="<%= item.id %>">
+          <label>
+            <input type="checkbox" class="ec-check" <%= 'checked' if item.is_done? %> <%= 'disabled' unless tickable %>
+                   data-url="<%= done_expert_checklist_item_path(item) %>" />
+            <span class="ec-subject"><%= expert_checklist_subject(item, issue) %></span>
+          </label>
+        </li>
+      <% end %>
+    <% end %>
+  </ul>
+</div>
+<%= content_tag(:script, expert_checklist_config.to_json.html_safe, :type => 'application/json', :class => 'ec-config') %>
+<% end %>

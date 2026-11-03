@@ -1,0 +1,18 @@
+h3. redmine_expert_checklists 0.1.0 — 2026-11-03
+
+h4. Added
+
+* Checklists on issues: items and sections, a block on the issue page with progress, ticking without a page reload.
+* Editor in the issue form: add, rename, tick, delete, reorder by dragging or Alt+Up/Down, paste several lines as several items.
+* One history line per changed item, also in notification mails and the PDF export.
+* Bundled mails: ticks by the same user within 60 seconds share one history entry and one notification, sent in the background.
+* Optional: % Done from the checklist; block closing while items are open.
+* Copying an issue copies its checklist.
+* Issue list column "Checklist" (also CSV and PDF) and filters by item state and item text.
+* REST API for items; RedmineUP Checklists' paths and field names keep working once it is removed.
+* Import from RedmineUP Checklists with a dry run: items with their ids, permissions, settings, saved queries, project module.
+* UI in English, German, Spanish, French, Italian and Portuguese (Portugal, Brazil).
+
+h4. Upgrade notes
+
+First release. Run @rake redmine:plugins:migrate NAME=redmine_expert_checklists@, restart, then enable the *Checklists* project module and grant the permissions - or use the RedmineUP import, which does both.

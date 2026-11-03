@@ -1,0 +1,57 @@
+h3. Requirements
+
+* Redmine 5.1.x, 6.0.x, 6.1.x or 7.0.x
+* No extra gems
+
+Every release is tested against Redmine 5.1, 6.0, 6.1 and 7.0 on a clean MariaDB, and additionally booted inside the official @redmine@ Docker images for the same versions.
+
+h3. 1. Install the plugin
+
+Download @redmine_expert_checklists-<version>.zip@ (or @.tar.gz@) from the "Releases":https://github.com/expertZentrale/redmine_expert_checklists/releases page. The archive already contains a top-level @redmine_expert_checklists/@ folder, so extract it directly into your Redmine @plugins/@ directory:
+
+<pre>
+cd /path/to/redmine/plugins
+unzip redmine_expert_checklists-<version>.zip
+</pre>
+
+Alternatively, from source:
+
+<pre>
+cd /path/to/redmine/plugins
+git clone https://github.com/expertZentrale/redmine_expert_checklists.git
+</pre>
+
+h3. 2. Run the migrations
+
+Two tables: the checklist items and the pending notification mails.
+
+<pre>
+cd /path/to/redmine
+bundle exec rake redmine:plugins:migrate NAME=redmine_expert_checklists RAILS_ENV=production
+</pre>
+
+Then restart Redmine so the plugin is loaded.
+
+h3. 3. Switch it on
+
+* Enable the project module *Checklists* in the projects that should use it (or let the RedmineUP import do it, see below).
+* Grant the permissions *View checklists*, *Tick checklist items* and *Edit checklists* to the roles under _Administration » Roles and permissions_.
+* Optional settings under _Administration » expert Checklists_: mails for checklist changes, % Done from the checklist, block closing while items are open.
+
+h3. 4. Optional: coming from RedmineUP Checklists
+
+Both plugins can run side by side; ours stays invisible until its module is switched on.
+
+# Open _Administration » expert Checklists » Open the import_ and check what it found. Nothing is written yet.
+# Back up the database, remove @plugins/redmine_checklists@ and restart. Do *not* run @redmine:plugins:migrate NAME=redmine_checklists VERSION=0@ - that drops the tables to import from.
+# Run the import with all steps: items (with their ids), permissions, settings, saved queries, project module. Every step can run again.
+
+For large installations the same import runs as @bundle exec rake redmine_expert_checklists:legacy_import RAILS_ENV=production@ (@DRY_RUN=1@ to see the counts first).
+
+h3. Optional: flushing pending mails from a cron job
+
+Checklist mails wait up to a minute for further ticks. If Redmine restarts in that minute, the next checklist change sends what was left. To be independent of that, call @POST /expert_checklists/notifications/flush.json@ with an administrator's API key from an external job.
+
+h3. Upgrade
+
+Replace the plugin directory, run the migrations and restart.

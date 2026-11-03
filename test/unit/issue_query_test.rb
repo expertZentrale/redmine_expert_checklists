@@ -61,6 +61,14 @@ class ExpertChecklistsIssueQueryTest < ActiveSupport::TestCase
     assert_equal [], query.issues.map(&:id)
   end
 
+  # Core's allowed_to_condition also requires the permission's project module.
+  def test_saved_filter_respects_the_disabled_module
+    Project.find(1).disable_module!(:expert_checklists)
+    query = IssueQuery.new(:name => '_', :project => Project.find(1))
+    query.filters = { 'expert_checklist_status' => { :operator => '*', :values => [''] } }
+    assert_equal [], query.issues.map(&:id)
+  end
+
   def test_filter_with_the_tick_permission_only
     Role.find(1).remove_permission!(:view_expert_checklists)
     Role.find(1).remove_permission!(:edit_expert_checklists)

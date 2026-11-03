@@ -26,7 +26,8 @@ rebuild with `docker-compose -f docker-compose.yml up --build`).
   `Mailer.deliver_issue_edit` in the same transaction; if that raises, the claim rolls back and
   `due_at` moves out by the row's age (at least 5 min); the sweeper drops rows older than a day.
   `ExpertChecklistNotification.sweep_if_due` (after every write, throttled by a `Rails.cache`
-  SET NX) re-enqueues rows whose job died with a pod;
+  SET NX) re-enqueues rows whose job died with a pod (`updated_at` marks the re-enqueue, and the
+  gap to the next one doubles, so a stalled queue does not get a job per sweep);
   `POST /expert_checklists/notifications/flush` does the same for a cron. **Never deliver mail
   inside the request** – RedmineUP's synchronous mails made a tick take seconds.
 - `lib/redmine_expert_checklists/patches/issue_patch.rb` – **form changes**: `has_many

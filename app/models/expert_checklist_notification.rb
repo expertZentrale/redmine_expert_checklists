@@ -85,13 +85,31 @@ class ExpertChecklistNotification < (defined?(ApplicationRecord) ? ApplicationRe
   end
 
   # grace: how long past due_at a row must be before it counts as lost.
+  #
+  # updated_at marks when a row was last re-enqueued here (Recorder sets it on
+  # create and merge, before due_at). A re-enqueued row is skipped until it has
+  # waited as long again as it was overdue then (at least SWEEP_GRACE), so a
+  # stalled queue collects a few duplicate jobs, not one per sweep. Duplicates
+  # are harmless: only one of them can claim the row.
   def self.sweep!(limit = SWEEP_BATCH, grace = SWEEP_GRACE)
-    dropped = where('created_at < ?', Time.now - MAX_AGE).delete_all
+    now = Time.now
+    dropped = where('created_at < ?', now - MAX_AGE).delete_all
     if dropped > 0
       Rails.logger.error("redmine_expert_checklists: dropped #{dropped} checklist notification(s) still failing after #{MAX_AGE.inspect}")
     end
-    rows = where('due_at < ?', Time.now - grace).order(:due_at).limit(limit).pluck(:journal_id, :revision)
-    rows.each { |journal_id, revision| enqueue(journal_id, revision) }
+    rows = where('due_at < ?', now - grace).order(:updated_at, :id).limit(limit).
+             pluck(:id, :journal_id, :revision, :due_at, :updated_at)
+    rows = rows.select { |_, _, _, due_at, enqueued_at| sweepable?(due_at, enqueued_at, now) }
+    return 0 if rows.empty?
+
+    where(:id => rows.map(&:first)).update_all(:updated_at => now)
+    rows.each { |_, journal_id, revision, _, _| enqueue(journal_id, revision) }
     rows.size
+  end
+
+  def self.sweepable?(due_at, enqueued_at, now)
+    return true if enqueued_at.nil? || enqueued_at <= due_at
+
+    now - enqueued_at >= [enqueued_at - due_at, SWEEP_GRACE].max
   end
 end

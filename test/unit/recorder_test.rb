@@ -146,6 +146,20 @@ class RecorderTest < ActiveSupport::TestCase
     assert_include 'jsmith@somenet.foo', recipients
   end
 
+  # A stalled queue: the row stays overdue, but each sweep that finds it
+  # waits as long again before enqueueing another job for it.
+  def test_sweeper_backs_off_for_rows_it_already_requeued
+    journal = tick(@items[0])
+    ExpertChecklistNotificationJob.queue_adapter.enqueued_jobs.clear
+    travel 2.minutes do
+      assert_equal 1, ExpertChecklistNotification.sweep!
+      assert_equal 0, ExpertChecklistNotification.sweep!
+    end
+    travel(2.minutes + 30.seconds) { assert_equal 0, ExpertChecklistNotification.sweep! }
+    travel(3.minutes + 30.seconds) { assert_equal 1, ExpertChecklistNotification.sweep! }
+    assert_equal [[journal.id, 1]] * 2, enqueued_checklist_jobs.map { |job| job[:args] }
+  end
+
   def test_sweeper_drops_rows_still_pending_after_a_day
     journal = tick(@items[0])
     ExpertChecklistNotificationJob.queue_adapter.enqueued_jobs.clear

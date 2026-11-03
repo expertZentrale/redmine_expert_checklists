@@ -168,6 +168,34 @@ class IssuesControllerChecklistTest < Redmine::ControllerTest
     end
   end
 
+  # Core saves the journal before our after_save (it already holds the done
+  # ratio detail), so "never" must still work on a persisted journal: notify is
+  # an in-memory flag that core's after_create_commit reads from this object.
+  def test_never_mode_suppresses_the_mail_of_an_already_saved_journal
+    Role.all.each { |role| role.add_permission!(:view_expert_checklists) }
+    with_settings(:issue_done_ratio => 'issue_field', :notified_events => %w(issue_updated)) do
+      with_checklist_settings('done_ratio_from_checklist' => '1', 'notifications' => 'never') do
+        put :update, :params => {
+          :id => 1,
+          :issue => { :expert_checklist_form => '1', :expert_checklist_items_attributes => rows(
+            { :id => @items[2].id, :is_done => '1', :is_done_was => '0' }
+          ) }
+        }
+      end
+    end
+    journal = @issue.reload.journals.last
+    assert_equal %w(done_ratio), journal.details.select { |d| d.property == 'attr' }.map(&:prop_key)
+    assert journal.details.any? { |d| d.property == RedmineExpertChecklists::DETAIL_PROPERTY }
+    assert_empty ActionMailer::Base.deliveries
+  end
+
+  # Rows go through our setter (positions, *_was, dropped rows), not the one
+  # accepts_nested_attributes_for generated: ours is included later.
+  def test_our_nested_attributes_setter_takes_precedence
+    assert_equal RedmineExpertChecklists::Patches::IssuePatch::InstanceMethods,
+                 Issue.instance_method(:expert_checklist_items_attributes=).owner
+  end
+
   def test_new_copy_form_is_prefilled_from_the_source
     get :new, :params => { :project_id => 1, :copy_from => 1 }
     assert_response :success

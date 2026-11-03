@@ -55,10 +55,16 @@ class ExpertChecklistsIssueQueryTest < ActiveSupport::TestCase
   # A saved query keeps its filter after the user lost the permission (the
   # filter is then no longer offered); it must not reveal anything.
   def test_saved_filter_respects_the_permission
-    Role.find(1).remove_permission!(:view_expert_checklists)
+    revoke_checklists
     query = IssueQuery.new(:name => '_', :project => Project.find(1))
     query.filters = { 'expert_checklist_status' => { :operator => '*', :values => [''] } }
     assert_equal [], query.issues.map(&:id)
+  end
+
+  def test_filter_with_the_tick_permission_only
+    Role.find(1).remove_permission!(:view_expert_checklists)
+    Role.find(1).remove_permission!(:edit_expert_checklists)
+    assert_equal [1, 2, 3], ids_for('expert_checklist_item', '*')
   end
 
   def test_column_value_and_export_format

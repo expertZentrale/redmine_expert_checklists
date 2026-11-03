@@ -47,8 +47,9 @@ schreibt.
 
 Die Mail ist Redmines eigene Benachrichtigung „Ticket aktualisiert“. Empfänger,
 Benachrichtigungseinstellungen und private Notizen funktionieren also wie bei jeder anderen
-Änderung. Wer Checklisten nicht sehen darf, bekommt keine Mail zu Checklisten-Änderungen und sieht
-sie auch nicht im Verlauf.
+Änderung. Wer keine der Checklisten-Berechtigungen hat, bekommt keine Mail zu
+Checklisten-Änderungen und sieht sie auch nicht im Verlauf. Ändert die Checkliste % erledigt, ist
+das ein normales Ticketfeld und erscheint wie jede andere Änderung.
 
 Checklisten-Änderungen, die **mit dem Ticketformular** gespeichert werden, gehören zu dieser
 Bearbeitung: Sie stehen in deren Verlaufseintrag und deren Mail, sofort.
@@ -57,7 +58,9 @@ Die ausstehenden Mails liegen in einer Tabelle, nicht nur im Speicher. Startet R
 der Minute neu, verschickt die nächste Checklisten-Änderung irgendwo im System, was liegen geblieben
 ist. Wer davon unabhängig sein will, lässt einen externen Job
 `POST /expert_checklists/notifications/flush.json` mit dem API-Schlüssel eines Administrators
-aufrufen.
+aufrufen. Scheitert die Übergabe einer Mail an Redmine (Datenbank oder Job-Warteschlange nicht
+erreichbar), wird sie mit wachsenden Abständen bis zu einem Tag lang erneut versucht und danach mit
+einem Fehler im Log verworfen.
 
 Einstellung *Mails bei Checklisten-Änderungen*:
 
@@ -75,7 +78,7 @@ dort nichts und lehnt seine API ab.
 | Berechtigung | Erlaubt |
 |---|---|
 | Checklisten ansehen | Checkliste, ihren Verlauf, Listenspalte und Filter sehen; die API lesen |
-| Checklistenpunkte abhaken | Punkte auf der Ticketseite abhaken und das Häkchen entfernen |
+| Checklistenpunkte abhaken | Alles, was „Checklisten ansehen“ erlaubt, dazu Punkte auf der Ticketseite abhaken und das Häkchen entfernen |
 | Checklisten bearbeiten | Alles oben, dazu Punkte im Ticketformular und über die API hinzufügen, umbenennen, umsortieren und löschen |
 
 ## Ticketliste

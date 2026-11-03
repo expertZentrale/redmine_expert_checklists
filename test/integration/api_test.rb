@@ -61,10 +61,18 @@ class ExpertChecklistsApiTest < Redmine::ApiTest::Base
     assert_response :unprocessable_entity
   end
 
-  def test_requires_the_view_permission
-    Role.find(1).remove_permission!(:view_expert_checklists)
+  def test_requires_a_checklist_permission
+    revoke_checklists
     get '/issues/1/expert_checklist_items.json', :headers => credentials('jsmith')
     assert_response :forbidden
+  end
+
+  # "Edit checklists" includes viewing them.
+  def test_edit_permission_alone_reads_the_api
+    Role.find(1).remove_permission!(:view_expert_checklists)
+    Role.find(1).remove_permission!(:done_expert_checklists)
+    get '/issues/1/expert_checklist_items.json', :headers => credentials('jsmith')
+    assert_response :success
   end
 
   def test_issue_api_accepts_nested_items

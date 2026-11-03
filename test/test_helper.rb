@@ -27,6 +27,12 @@ module ExpertChecklistsTestHelper
     project
   end
 
+  # Takes all three checklist permissions from the role; any one of them
+  # shows the checklist.
+  def revoke_checklists(role = Role.find(1))
+    RedmineExpertChecklists::VIEW_PERMISSIONS.each { |permission| role.remove_permission!(permission) }
+  end
+
   def with_checklist_settings(values)
     saved = Setting.plugin_redmine_expert_checklists
     Setting.plugin_redmine_expert_checklists = saved.merge(values.transform_keys(&:to_s))

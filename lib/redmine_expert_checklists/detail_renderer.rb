@@ -46,8 +46,7 @@ module RedmineExpertChecklists
     end
 
     def legacy_lines(detail, no_html)
-      before = LegacyDiff.parse(detail.old_value)
-      after = LegacyDiff.parse(detail.value)
+      before, after = legacy_snapshots(detail)
       if before.nil? || after.nil? ||
          LegacyDiff.old_text_format?(detail.old_value) || LegacyDiff.old_text_format?(detail.value)
         return [changed_line(detail.old_value, detail.value, no_html)]
@@ -56,6 +55,18 @@ module RedmineExpertChecklists
       lines = (before.keys | after.keys).flat_map { |key| item_lines(before[key], after[key], no_html) }
       # RedmineUP journaled reorders too; the snapshots then differ only in order.
       lines.empty? ? [line(:reordered, no_html)] : lines
+    end
+
+    # Matched by id. Rows without one (RedmineUP's custom-field format) would
+    # all share the empty key, so then both sides are matched by subject.
+    def legacy_snapshots(detail)
+      before = LegacyDiff.parse(detail.old_value)
+      after = LegacyDiff.parse(detail.value)
+      if [before, after].any? { |map| map && map.key?('') }
+        before = LegacyDiff.parse(detail.old_value, :subject)
+        after = LegacyDiff.parse(detail.value, :subject)
+      end
+      [before, after]
     end
 
     def parse_snapshot(value)

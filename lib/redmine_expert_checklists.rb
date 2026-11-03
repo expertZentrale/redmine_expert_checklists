@@ -13,6 +13,9 @@ module RedmineExpertChecklists
   DETAIL_PROPERTY = 'expert_checklist'.freeze
   SUBJECT_MAX = 1000
   NOTIFICATION_MODES = %w(issue_updated always never).freeze
+  # Any of the three permissions shows the checklist: ticking or editing what
+  # one cannot see makes no sense, and "Edit checklists" includes viewing.
+  VIEW_PERMISSIONS = [:view_expert_checklists, :done_expert_checklists, :edit_expert_checklists].freeze
 
   module_function
 
@@ -50,8 +53,12 @@ module RedmineExpertChecklists
     !!(project && project.module_enabled?(MODULE))
   end
 
+  def view_allowed?(project, user = User.current, options = {})
+    VIEW_PERMISSIONS.any? { |permission| user.allowed_to?(permission, project, options) }
+  end
+
   def viewable?(issue, user = User.current)
-    issue && enabled?(issue.project) && user.allowed_to?(:view_expert_checklists, issue.project)
+    issue && enabled?(issue.project) && view_allowed?(issue.project, user)
   end
 
   # May tick and untick items on the issue page.

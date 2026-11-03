@@ -97,7 +97,7 @@ class ExpertChecklistItemsController < ApplicationController
   end
 
   def check_issue_visibility
-    deny_access unless @issue.visible?
+    deny_access unless @issue.visible? && RedmineExpertChecklists.viewable?(@issue)
   end
 
   # "checklist" is RedmineUP's root key; ours is accepted as well.

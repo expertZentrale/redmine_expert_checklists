@@ -14,9 +14,9 @@ module RedmineExpertChecklists
 
       def self.offered?(project, user = User.current)
         if project
-          RedmineExpertChecklists.enabled?(project) && user.allowed_to?(:view_expert_checklists, project)
+          RedmineExpertChecklists.enabled?(project) && RedmineExpertChecklists.view_allowed?(project, user)
         else
-          user.allowed_to?(:view_expert_checklists, nil, :global => true)
+          RedmineExpertChecklists.view_allowed?(nil, user, :global => true)
         end
       end
 
@@ -114,7 +114,10 @@ module RedmineExpertChecklists
         end
 
         def expert_checklist_visible(sql)
-          "(#{Project.allowed_to_condition(User.current, :view_expert_checklists)} AND #{sql})"
+          allowed = RedmineExpertChecklists::VIEW_PERMISSIONS.map do |permission|
+            "(#{Project.allowed_to_condition(User.current, permission)})"
+          end
+          "((#{allowed.join(' OR ')}) AND #{sql})"
         end
 
         def expert_checklist_true

@@ -116,16 +116,42 @@ class RecorderTest < ActiveSupport::TestCase
     assert_empty ActionMailer::Base.deliveries
   end
 
-  def test_users_without_view_permission_get_no_mail
+  def test_users_without_a_checklist_permission_get_no_mail
     journal = tick(@items[0])
     travel(61.seconds) { ExpertChecklistNotification.deliver(journal.id, 1) }
     assert_include 'jsmith@somenet.foo', recipients
 
     ActionMailer::Base.deliveries.clear
-    Role.find(1).remove_permission!(:view_expert_checklists)
+    revoke_checklists
     journal = tick(@items[1])
     travel(61.seconds) { ExpertChecklistNotification.deliver(journal.id, 1) }
     assert_not_include 'jsmith@somenet.foo', recipients
+  end
+
+  # Core raising while it queues the mails (database or queue down) must not
+  # lose the notification: the claim rolls back and the row waits.
+  def test_failed_hand_over_keeps_the_row_for_a_later_attempt
+    journal = tick(@items[0])
+    Mailer.stubs(:deliver_issue_edit).raises(RuntimeError, 'queue down')
+    travel(61.seconds) do
+      assert_not ExpertChecklistNotification.deliver(journal.id, 1)
+      row = ExpertChecklistNotification.find_by(:journal_id => journal.id)
+      assert row, 'the row must survive a failed hand-off'
+      assert_operator row.due_at, :>, Time.now + 4.minutes
+    end
+    Mailer.unstub(:deliver_issue_edit)
+    ActionMailer::Base.deliveries.clear
+    travel(7.minutes) { assert ExpertChecklistNotification.deliver(journal.id, 1) }
+    assert_nil ExpertChecklistNotification.find_by(:journal_id => journal.id)
+    assert_include 'jsmith@somenet.foo', recipients
+  end
+
+  def test_sweeper_drops_rows_still_pending_after_a_day
+    journal = tick(@items[0])
+    ExpertChecklistNotificationJob.queue_adapter.enqueued_jobs.clear
+    travel(1.day + 1.minute) { assert_equal 0, ExpertChecklistNotification.sweep! }
+    assert_nil ExpertChecklistNotification.find_by(:journal_id => journal.id)
+    assert_empty enqueued_checklist_jobs
   end
 
   def test_sweeper_requeues_overdue_rows

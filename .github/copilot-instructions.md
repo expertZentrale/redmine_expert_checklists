@@ -16,17 +16,20 @@ rebuild with `docker-compose -f docker-compose.yml up --build`).
 
 ## Layout
 
-- `lib/redmine_expert_checklists.rb` – settings readers, permission checks (`viewable?`,
-  `tickable?`, `editable?` – all false while the module is off in the project), the item snapshot
-  `{subject, is_done, is_section}` and `redmineup_present?` (a file test, also used by routes.rb).
+- `lib/redmine_expert_checklists.rb` – settings readers, permission checks (`viewable?` – any of
+  the three permissions, `tickable?`, `editable?` – all false while the module is off in the
+  project), the item snapshot `{subject, is_done, is_section}` and `redmineup_present?` (a file
+  test, also used by routes.rb).
 - `lib/redmine_expert_checklists/recorder.rb` – **direct changes** (tick, REST): one transaction
   with the issue row locked, snapshot before/after, `Journalizer.diff`, done ratio, then either
   merge into the user's pending journal (`expert_checklist_notifications` row still due, issue's
   last journal, at most `MAX_BUNDLE_SPAN`) or a new journal with `notify = false` plus a row.
   `ExpertChecklistNotificationJob` is scheduled for `due_at`; it claims the row by deleting it for
   its revision (a merge bumps the revision, so stale jobs do nothing) and calls core
-  `Mailer.deliver_issue_edit`. `ExpertChecklistNotification.sweep_if_due` (after every write,
-  throttled by a `Rails.cache` SET NX) re-enqueues rows whose job died with a pod;
+  `Mailer.deliver_issue_edit` in the same transaction; if that raises, the claim rolls back and
+  `due_at` moves out by the row's age (at least 5 min); the sweeper drops rows older than a day.
+  `ExpertChecklistNotification.sweep_if_due` (after every write, throttled by a `Rails.cache`
+  SET NX) re-enqueues rows whose job died with a pod;
   `POST /expert_checklists/notifications/flush` does the same for a cron. **Never deliver mail
   inside the request** – RedmineUP's synchronous mails made a tick take seconds.
 - `lib/redmine_expert_checklists/patches/issue_patch.rb` – **form changes**: `has_many

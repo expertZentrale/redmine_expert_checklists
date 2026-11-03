@@ -4,8 +4,8 @@ h3. Features
 
 * *Issue page:* checklist block under the description with sections, progress and "Hide done". Ticking saves without a page reload; the edit form on the same page stays in step.
 * *Issue form:* add, rename, tick, delete and reorder items (drag or Alt+Up/Down). Paste several lines to add one item per line; @--@ starts a section, @[x]@ marks an item done.
-* *History:* one line per changed item ("Checklist item _Buy milk_ done"), also in notification mails and the PDF export. Users without the view permission see neither the lines nor the mails.
-* *Bundled mails:* ticks by the same user within 60 seconds share one history entry and one notification, sent once the user stops. Pending mails are stored, so a restart does not lose them. Setting: like issue updates, always or never.
+* *History:* one line per changed item ("Checklist item _Buy milk_ done"), also in notification mails and the PDF export. Users without any checklist permission see neither the lines nor the mails.
+* *Bundled mails:* ticks by the same user within 60 seconds share one history entry and one notification, sent once the user stops. Pending mails are stored, so neither a restart nor a failing mail queue loses them. Setting: like issue updates, always or never.
 * *% Done from the checklist* and *block closing while items are open* (both optional).
 * *Copying* an issue copies its checklist, including bulk copy, project copy and subtasks.
 * *Issue list:* "Checklist" column (also CSV and PDF) and filters by item state and item text.

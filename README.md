@@ -40,8 +40,9 @@ it again leaves no history entry and sends no mail. A bundle closes after ten mi
 and as soon as someone else writes to the issue.
 
 The mail is Redmine's own "issue updated" notification, so recipients, mail preferences and
-private notes work as for any other change. Users without permission to view checklists are not
-mailed about checklist changes and do not see them in the history.
+private notes work as for any other change. Users without any of the checklist permissions are
+not mailed about checklist changes and do not see them in the history. A % Done the checklist
+changed is an ordinary issue field and shows like any other change.
 
 Checklist changes saved **with the issue form** are part of that edit: they go into its history
 entry and its mail, right away.
@@ -49,7 +50,8 @@ entry and its mail, right away.
 The pending mails are kept in a table, not only in memory. If Redmine restarts within the minute,
 the next checklist change anywhere sends what was left over. To be independent of that, an
 external job can call `POST /expert_checklists/notifications/flush.json` with an administrator's
-API key.
+API key. If handing a mail to Redmine fails (database or job queue unavailable), it is tried again
+with growing gaps for up to a day, then dropped with an error in the log.
 
 Setting *Mails for checklist changes*:
 
@@ -67,7 +69,7 @@ shows nothing there and refuses its API.
 | Permission | Allows |
 |---|---|
 | View checklists | See the checklist, its history, the list column and filters; read the API |
-| Tick checklist items | Tick and untick items on the issue page |
+| Tick checklist items | Everything "View checklists" allows, plus ticking and unticking items on the issue page |
 | Edit checklists | Everything above, plus adding, renaming, reordering and deleting items in the issue form and through the API |
 
 ## Issue list

@@ -60,10 +60,12 @@ Redmine::Plugin.register :redmine_expert_checklists do
     permission :view_expert_checklists,
                { :expert_checklist_items => [:index, :show] },
                :read => true
+    # Ticking and editing include viewing (RedmineExpertChecklists.viewable?),
+    # so both also allow reading the API.
     permission :done_expert_checklists,
-               { :expert_checklist_items => [:done] }
+               { :expert_checklist_items => [:index, :show, :done] }
     permission :edit_expert_checklists,
-               { :expert_checklist_items => [:create, :update, :destroy, :done] }
+               { :expert_checklist_items => [:index, :show, :create, :update, :destroy, :done] }
   end
 
   menu_options = { :caption => :label_expert_checklists }

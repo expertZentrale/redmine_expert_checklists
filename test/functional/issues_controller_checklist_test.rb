@@ -48,10 +48,17 @@ class IssuesControllerChecklistTest < Redmine::ControllerTest
     assert_select '[data-ec-editor]', 0
   end
 
-  def test_show_without_view_permission
-    Role.find(1).remove_permission!(:view_expert_checklists)
+  def test_show_without_a_checklist_permission
+    revoke_checklists
     get :show, :params => { :id => 1 }
     assert_select 'div.expert-checklist', 0
+  end
+
+  def test_show_with_the_tick_permission_only
+    Role.find(1).remove_permission!(:view_expert_checklists)
+    Role.find(1).remove_permission!(:edit_expert_checklists)
+    get :show, :params => { :id => 1 }
+    assert_select 'div.expert-checklist input.ec-check:not([disabled])'
   end
 
   def test_update_journalizes_checklist_changes_with_the_edit_and_mails_once

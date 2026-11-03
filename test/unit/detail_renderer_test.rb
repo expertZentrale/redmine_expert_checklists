@@ -60,6 +60,14 @@ class DetailRendererTest < ActiveSupport::TestCase
     assert_equal ['Checklist reordered'], render(legacy)
   end
 
+  def test_legacy_rows_without_ids_are_matched_by_subject
+    RedmineExpertChecklists.stubs(:redmineup_present?).returns(false)
+    old = [{ 'subject' => 'a', 'is_done' => false }, { 'subject' => 'b', 'is_done' => false }].to_json
+    new = [{ 'subject' => 'a', 'is_done' => true }, { 'subject' => 'c', 'is_done' => false }].to_json
+    assert_equal ['Checklist item a done', 'Checklist item b deleted', 'Checklist item c added'],
+                 render(detail(old, new, 'attr', 'checklist'))
+  end
+
   def test_legacy_text_format_falls_back_to_changed_from
     RedmineExpertChecklists.stubs(:redmineup_present?).returns(false)
     legacy = detail('[ ] a', '[x] a', 'attr', 'checklist')

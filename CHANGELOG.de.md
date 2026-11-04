@@ -36,6 +36,6 @@
 - Übernahme aus RedmineUP Checklists (Admin-Seite und Rake-Task, vorher Probelauf): Punkte mit ihren
   IDs, Berechtigungen, Einstellungen, gespeicherte Abfragen, Projektmodul. Die Verlaufseinträge von
   RedmineUP bleiben lesbar.
-- Projektmodul „Checklisten“ mit den Berechtigungen ansehen, abhaken und bearbeiten.
+- Projektmodul „expert Checklisten“ mit den Berechtigungen ansehen, abhaken und bearbeiten.
 - Oberfläche auf Englisch, Deutsch, Spanisch, Französisch, Italienisch und Portugiesisch
   (Portugal, Brasilien).

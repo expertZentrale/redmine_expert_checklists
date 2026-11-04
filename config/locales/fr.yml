@@ -1,6 +1,6 @@
 fr:
   label_expert_checklists: "expert Checklists"
-  project_module_expert_checklists: "Checklists"
+  project_module_expert_checklists: "expert Checklists"
   permission_view_expert_checklists: "Voir les checklists"
   permission_done_expert_checklists: "Cocher les éléments de checklist"
   permission_edit_expert_checklists: "Modifier les checklists"
@@ -69,7 +69,7 @@ fr:
   text_expert_checklist_import_phase_permissions: "Chaque rôle autorisé à voir, cocher ou modifier les checklists RedmineUP reçoit ici la même permission."
   text_expert_checklist_import_phase_settings: "% réalisé d'après la checklist, le blocage de la fermeture et le paramètre des e-mails."
   text_expert_checklist_import_phase_queries: "Remplace la colonne et les filtres de checklist de RedmineUP dans les rapports personnalisés de demandes."
-  text_expert_checklist_import_phase_modules: "Active le module Checklists dans chaque projet qui utilise le suivi des demandes, ainsi que pour les nouveaux projets."
+  text_expert_checklist_import_phase_modules: "Active le module expert Checklists dans chaque projet qui utilise le suivi des demandes, ainsi que pour les nouveaux projets."
   text_expert_checklist_import_items: "%{items} éléments sur %{issues} demandes ; %{pending} demandes à importer, %{done} déjà importées"
   text_expert_checklist_import_items_skipped: "Ignorés : %{orphans} éléments de demandes supprimées, %{blank} éléments vides. %{long} éléments sont tronqués à 1000 caractères."
   text_expert_checklist_import_roles: "%{count} rôles à mettre à jour"

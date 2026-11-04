@@ -31,5 +31,5 @@
   RedmineUP Checklists is removed, its paths and `issue[checklists_attributes]` answer as well.
 - Import from RedmineUP Checklists (admin page and rake task, dry run first): items with their ids,
   permissions, settings, saved queries, project module. RedmineUP's history entries stay readable.
-- Project module "Checklists" with the permissions view, tick and edit.
+- Project module "expert Checklists" with the permissions view, tick and edit.
 - UI in English, German, Spanish, French, Italian and Portuguese (Portugal, Brazil).

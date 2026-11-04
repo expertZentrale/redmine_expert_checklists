@@ -34,7 +34,7 @@ Then restart Redmine so the plugin is loaded.
 
 h3. 3. Switch it on
 
-* Enable the project module *Checklists* in the projects that should use it (or let the RedmineUP import do it, see below).
+* Enable the project module *expert Checklists* in the projects that should use it (or let the RedmineUP import do it, see below).
 * Grant the permissions *View checklists*, *Tick checklist items* and *Edit checklists* to the roles under _Administration » Roles and permissions_.
 * Optional settings under _Administration » expert Checklists_: mails for checklist changes, % Done from the checklist, block closing while items are open.
 

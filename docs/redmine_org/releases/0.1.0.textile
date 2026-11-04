@@ -15,4 +15,4 @@ h4. Added
 
 h4. Upgrade notes
 
-First release. Run @rake redmine:plugins:migrate NAME=redmine_expert_checklists@, restart, then enable the *Checklists* project module and grant the permissions - or use the RedmineUP import, which does both.
+First release. Run @rake redmine:plugins:migrate NAME=redmine_expert_checklists@, restart, then enable the *expert Checklists* project module and grant the permissions - or use the RedmineUP import, which does both.

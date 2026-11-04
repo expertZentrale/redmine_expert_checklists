@@ -63,8 +63,8 @@ Setting *Mails for checklist changes*:
 
 ## Permissions
 
-Everything is behind the project module **Checklists**. While it is off in a project, the plugin
-shows nothing there and refuses its API.
+Everything is behind the project module **expert Checklists**. While it is off in a project, the
+plugin shows nothing there and refuses its API.
 
 | Permission | Allows |
 |---|---|
@@ -128,7 +128,7 @@ switched on, so the switch can be prepared and rehearsed.
 | Permissions | Every role that may view, tick or edit RedmineUP checklists gets the matching permission. |
 | Settings | Done ratio and block-closing take RedmineUP's values; the mail setting follows its "Checklist updated" notification event. |
 | Saved queries | RedmineUP's checklist column and filters in saved issue queries are replaced by ours. Queries that kept the old filter would fail once RedmineUP is gone. |
-| Project module | Switches *Checklists* on in every project that uses issue tracking, and for new projects. |
+| Project module | Switches *expert Checklists* on in every project that uses issue tracking, and for new projects. |
 
 RedmineUP's own history entries keep rendering as readable lines ("Checklist item *X* done").
 For large installations the same import runs as a rake task:
@@ -170,8 +170,8 @@ bundle exec rake redmine:plugins:migrate NAME=redmine_expert_checklists RAILS_EN
 # restart Redmine
 ```
 
-Then switch the **Checklists** module on in the projects that should use it (or use the import,
-which does that) and grant the permissions to the roles.
+Then switch the **expert Checklists** module on in the projects that should use it (or use the
+import, which does that) and grant the permissions to the roles.
 
 ## Tests
 

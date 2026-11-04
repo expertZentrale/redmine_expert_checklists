@@ -1,6 +1,6 @@
 en:
   label_expert_checklists: "expert Checklists"
-  project_module_expert_checklists: "Checklists"
+  project_module_expert_checklists: "expert Checklists"
   permission_view_expert_checklists: "View checklists"
   permission_done_expert_checklists: "Tick checklist items"
   permission_edit_expert_checklists: "Edit checklists"
@@ -69,7 +69,7 @@ en:
   text_expert_checklist_import_phase_permissions: "Every role that may view, tick or edit RedmineUP checklists gets the same permission here."
   text_expert_checklist_import_phase_settings: "% Done from the checklist, blocking the close, and the mail setting."
   text_expert_checklist_import_phase_queries: "Replaces RedmineUP's checklist column and filters in saved issue queries."
-  text_expert_checklist_import_phase_modules: "Switches the Checklists module on in every project that uses issue tracking, and for new projects."
+  text_expert_checklist_import_phase_modules: "Switches the expert Checklists module on in every project that uses issue tracking, and for new projects."
   text_expert_checklist_import_items: "%{items} items on %{issues} issues; %{pending} issues to import, %{done} already imported"
   text_expert_checklist_import_items_skipped: "Skipped: %{orphans} items of deleted issues, %{blank} empty items. %{long} items are cut to 1000 characters."
   text_expert_checklist_import_roles: "%{count} roles to update"

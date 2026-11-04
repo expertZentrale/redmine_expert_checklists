@@ -1,6 +1,6 @@
 pt:
   label_expert_checklists: "expert Listas de verificação"
-  project_module_expert_checklists: "Listas de verificação"
+  project_module_expert_checklists: "expert Listas de verificação"
   permission_view_expert_checklists: "Ver listas de verificação"
   permission_done_expert_checklists: "Marcar itens de listas de verificação"
   permission_edit_expert_checklists: "Editar listas de verificação"
@@ -69,7 +69,7 @@ pt:
   text_expert_checklist_import_phase_permissions: "Cada função que pode ver, marcar ou editar listas de verificação do RedmineUP recebe aqui a mesma permissão."
   text_expert_checklist_import_phase_settings: "% Completo a partir da lista de verificação, o bloqueio do fecho e a configuração de e-mail."
   text_expert_checklist_import_phase_queries: "Substitui a coluna e os filtros de lista de verificação do RedmineUP nas consultas de tarefas guardadas."
-  text_expert_checklist_import_phase_modules: "Ativa o módulo Listas de verificação em todos os projetos que usam tarefas, e para os novos projetos."
+  text_expert_checklist_import_phase_modules: "Ativa o módulo expert Listas de verificação em todos os projetos que usam tarefas, e para os novos projetos."
   text_expert_checklist_import_items: "%{items} itens em %{issues} tarefas; %{pending} tarefas por importar, %{done} já importadas"
   text_expert_checklist_import_items_skipped: "Ignorados: %{orphans} itens de tarefas apagadas, %{blank} itens vazios. %{long} itens são truncados para 1000 caracteres."
   text_expert_checklist_import_roles: "%{count} funções por atualizar"

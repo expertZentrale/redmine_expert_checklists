@@ -72,8 +72,8 @@ Einstellung *Mails bei Checklisten-Änderungen*:
 
 ## Berechtigungen
 
-Alles hängt am Projektmodul **Checklisten**. Solange es in einem Projekt aus ist, zeigt das Plugin
-dort nichts und lehnt seine API ab.
+Alles hängt am Projektmodul **expert Checklisten**. Solange es in einem Projekt aus ist, zeigt das
+Plugin dort nichts und lehnt seine API ab.
 
 | Berechtigung | Erlaubt |
 |---|---|
@@ -138,7 +138,7 @@ Projektmodul eingeschaltet ist; der Umstieg lässt sich also vorbereiten und pro
 | Berechtigungen | Jede Rolle, die RedmineUP-Checklisten ansehen, abhaken oder bearbeiten darf, bekommt die passende Berechtigung. |
 | Einstellungen | % erledigt und die Sperre beim Schließen übernehmen die Werte von RedmineUP; die Mail-Einstellung richtet sich nach dessen Benachrichtigungsereignis „Checkliste aktualisiert“. |
 | Gespeicherte Abfragen | Die Checklisten-Spalte und -Filter von RedmineUP in gespeicherten Ticket-Abfragen werden durch unsere ersetzt. Abfragen mit dem alten Filter würden ohne RedmineUP fehlschlagen. |
-| Projektmodul | Schaltet *Checklisten* in jedem Projekt mit Ticket-Tracking ein, und für neue Projekte. |
+| Projektmodul | Schaltet *expert Checklisten* in jedem Projekt mit Ticket-Tracking ein, und für neue Projekte. |
 
 Die Verlaufseinträge von RedmineUP werden weiter als lesbare Zeilen angezeigt („Checkliste: Punkt
 *X* erledigt“). Für große Installationen läuft dieselbe Übernahme als Rake-Task:
@@ -180,8 +180,8 @@ bundle exec rake redmine:plugins:migrate NAME=redmine_expert_checklists RAILS_EN
 # Redmine neu starten
 ```
 
-Danach das Modul **Checklisten** in den Projekten einschalten, die es nutzen sollen (oder die
-Übernahme nutzen, die das erledigt), und den Rollen die Berechtigungen geben.
+Danach das Modul **expert Checklisten** in den Projekten einschalten, die es nutzen sollen (oder
+die Übernahme nutzen, die das erledigt), und den Rollen die Berechtigungen geben.
 
 ## Tests
 

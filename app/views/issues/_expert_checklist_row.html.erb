@@ -1,0 +1,24 @@
+<%# One editor row. index is a placeholder; the script renumbers rows in display order before every submit, so positions follow what the user sees. %>
+<% prefix = "issue[expert_checklist_items_attributes][#{index}]" %>
+<% section = item.is_section? %>
+<li class="ec-edit-item<%= ' ec-section' if section %>" data-ec-row <%= "data-ec-id=#{item.id}" if item.id %>>
+  <span class="ec-handle" aria-hidden="true" title="<%= l(:label_expert_checklist_drag) %>">&#x2807;</span>
+  <% if item.id %>
+    <input type="hidden" data-ec-field="id" name="<%= prefix %>[id]" value="<%= item.id %>" />
+    <input type="hidden" data-ec-field="subject_was" name="<%= prefix %>[subject_was]" value="<%= item.subject_was.presence || item.subject %>" />
+    <input type="hidden" data-ec-field="is_done_was" name="<%= prefix %>[is_done_was]" value="<%= (item.is_done_changed? ? item.is_done_was : item.is_done) ? '1' : '0' %>" />
+  <% end %>
+  <input type="hidden" data-ec-field="_destroy" name="<%= prefix %>[_destroy]" value="0" />
+  <input type="hidden" data-ec-field="is_section" name="<%= prefix %>[is_section]" value="<%= section ? '1' : '0' %>" />
+  <input type="hidden" data-ec-field="is_done" name="<%= prefix %>[is_done]" value="0" />
+  <% unless section %>
+    <input type="checkbox" class="ec-edit-check" data-ec-field="is_done" name="<%= prefix %>[is_done]" value="1" <%= 'checked' if item.is_done? %>
+           aria-label="<%= l(:label_expert_checklist_done) %>" />
+  <% end %>
+  <input type="text" class="ec-subject-input" data-ec-field="subject" name="<%= prefix %>[subject]" value="<%= item.subject %>"
+         maxlength="<%= RedmineExpertChecklists::SUBJECT_MAX %>"
+         aria-label="<%= section ? l(:label_expert_checklist_section) : l(:label_expert_checklist_item) %>" />
+  <button type="button" class="ec-move-up" aria-label="<%= l(:label_expert_checklist_move_up) %>" title="<%= l(:label_expert_checklist_move_up) %>">&uarr;</button>
+  <button type="button" class="ec-move-down" aria-label="<%= l(:label_expert_checklist_move_down) %>" title="<%= l(:label_expert_checklist_move_down) %>">&darr;</button>
+  <button type="button" class="ec-remove" aria-label="<%= l(:button_delete) %>" title="<%= l(:button_delete) %>">&times;</button>
+</li>

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/expertZentrale/redmine_expert_checklists/blob/main/README.md
+    about: Installation, permissions, settings and the REST API.
+  - name: Changelog
+    url: https://github.com/expertZentrale/redmine_expert_checklists/blob/main/CHANGELOG.md
+    about: What changed in each release.

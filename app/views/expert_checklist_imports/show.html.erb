@@ -1,0 +1,67 @@
+<h2><%= l(:label_expert_checklist_legacy_import) %></h2>
+
+<p><%= l(:text_expert_checklist_legacy_import_intro) %></p>
+
+<% if @report['redmineup_installed'] %>
+  <p class="warning"><%= l(:text_expert_checklist_import_redmineup_installed) %></p>
+<% end %>
+
+<% unless @report['legacy_table'] %>
+  <p class="nodata"><%= l(:text_expert_checklist_import_no_table) %></p>
+<% end %>
+
+<%= form_tag(expert_checklist_legacy_import_path, :method => :post, :id => 'expert-checklist-import') do %>
+  <%= hidden_field_tag 'force', '1' if @import.force %>
+  <table class="list">
+    <thead>
+      <tr>
+        <th></th>
+        <th><%= l(:label_expert_checklist_import_phase) %></th>
+        <th><%= l(:label_expert_checklist_import_found) %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% RedmineExpertChecklists::LegacyImport::PHASES.each do |phase| %>
+        <% blocked = @import.blocked?(phase) %>
+        <tr>
+          <td><%= check_box_tag 'phases[]', phase, !blocked, :id => "phase_#{phase}", :disabled => blocked %></td>
+          <td>
+            <label for="phase_<%= phase %>"><strong><%= l("label_expert_checklist_import_phase_#{phase}") %></strong></label><br />
+            <em class="info"><%= l("text_expert_checklist_import_phase_#{phase}") %></em>
+          </td>
+          <td>
+            <% case phase %>
+            <% when 'items' %>
+              <% if @report['legacy_table'] %>
+                <%= l(:text_expert_checklist_import_items,
+                      :items => @report['legacy_items'], :issues => @report['legacy_issues'],
+                      :pending => @report['issues_to_import'], :done => @report['issues_already_imported']) %>
+                <% if @report['orphan_items'].to_i + @report['blank_items'].to_i + @report['long_items'].to_i > 0 %>
+                  <br /><em class="info"><%= l(:text_expert_checklist_import_items_skipped,
+                                               :orphans => @report['orphan_items'], :blank => @report['blank_items'],
+                                               :long => @report['long_items']) %></em>
+                <% end %>
+              <% else %>
+                &mdash;
+              <% end %>
+            <% when 'permissions' %>
+              <%= l(:text_expert_checklist_import_roles, :count => @report['roles']) %>
+            <% when 'settings' %>
+              <%= @report['settings'].map { |key, value| "#{key} = #{value}" }.join(', ') %>
+            <% when 'queries' %>
+              <%= l(:text_expert_checklist_import_queries, :count => @report['queries']) %>
+            <% when 'modules' %>
+              <%= l(:text_expert_checklist_import_projects, :count => @report['projects']) %>
+            <% end %>
+            <% if blocked %>
+              <br /><em class="info"><%= l(:text_expert_checklist_import_blocked) %></em>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <p><%= submit_tag l(:button_expert_checklist_import_run), :data => { :confirm => l(:text_are_you_sure) } %></p>
+<% end %>
+
+<% html_title(l(:label_expert_checklist_legacy_import)) %>

@@ -189,8 +189,8 @@ die Übernahme nutzen, die das erledigt), und den Rollen die Berechtigungen gebe
 bundle exec rake redmine:plugins:test NAME=redmine_expert_checklists RAILS_ENV=test
 ```
 
-Die CI führt sie gegen Redmine 5.1, 6.0, 6.1 und 7.0 auf MariaDB aus und startet die offiziellen
-Redmine-Docker-Images mit eingebundenem Plugin.
+Die CI führt sie gegen Redmine 5.1, 6.0, 6.1 und 7.0 auf MariaDB aus, gegen 5.1 und 7.0 zusätzlich
+auf MySQL und PostgreSQL, und startet die offiziellen Redmine-Docker-Images mit eingebundenem Plugin.
 
 ## Lizenz
 

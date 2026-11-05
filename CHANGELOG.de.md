@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+### Geändert
+
+- **Die Tests laufen auch auf MySQL und PostgreSQL.** Die CI führt die Suite für jede unterstützte
+  Redmine-Version auf MariaDB aus und für die älteste und die neueste (5.1 und 7.0) zusätzlich auf
+  MySQL 8.4 und PostgreSQL 17.
+
 ## [0.1.0] - 2026-11-03
 
 ### Hinzugefügt

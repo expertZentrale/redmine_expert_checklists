@@ -179,8 +179,8 @@ import, which does that) and grant the permissions to the roles.
 bundle exec rake redmine:plugins:test NAME=redmine_expert_checklists RAILS_ENV=test
 ```
 
-CI runs them against Redmine 5.1, 6.0, 6.1 and 7.0 on MariaDB, and starts the official Redmine
-Docker images with the plugin mounted.
+CI runs them against Redmine 5.1, 6.0, 6.1 and 7.0 on MariaDB, against 5.1 and 7.0 on MySQL and
+PostgreSQL as well, and starts the official Redmine Docker images with the plugin mounted.
 
 ## License
 

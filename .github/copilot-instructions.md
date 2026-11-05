@@ -104,7 +104,8 @@ adapter (core mail jobs stay `:inline`) and move time with `travel` / `travel_to
 
 ## CI
 
-- `.github/workflows/ci.yml` – plugin tests against Redmine 5.1/6.0/6.1/7.0-stable on MariaDB.
+- `.github/workflows/ci.yml` – plugin tests against Redmine 5.1/6.0/6.1/7.0-stable on MariaDB,
+  5.1 and 7.0 also on MySQL 8.4 and PostgreSQL 17 (the database starts in a step per matrix entry).
 - `.github/workflows/docker-image.yml` – official `redmine:*` images with the plugin mounted and
   migrated; `/login` must answer and the head hook's script and stylesheet must be served.
 - `.github/workflows/release.yml` – runs on `vX.Y.Z` tags only, see below.

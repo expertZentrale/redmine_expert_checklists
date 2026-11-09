@@ -89,3 +89,4 @@ de:
   button_expert_checklist_import_switch: "Projekte umstellen"
   notice_expert_checklist_import_projects_done: "Umgestellt: %{projects} – %{result}"
   error_expert_checklist_import_no_project: "Nichts umgestellt - bitte mindestens ein Projekt wählen."
+  error_expert_checklist_import_project_without_issues: "Diese Projekte nutzen kein Ticket-Tracking, es gibt nichts umzustellen: %{projects}"

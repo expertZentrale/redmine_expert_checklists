@@ -89,3 +89,4 @@ es:
   button_expert_checklist_import_switch: "Cambiar proyectos"
   notice_expert_checklist_import_projects_done: "Cambiados %{projects}: %{result}"
   error_expert_checklist_import_no_project: "No se ha cambiado nada - elija al menos un proyecto."
+  error_expert_checklist_import_project_without_issues: "Estos proyectos no usan peticiones, no hay nada que cambiar: %{projects}"

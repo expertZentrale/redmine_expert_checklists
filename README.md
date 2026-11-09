@@ -125,7 +125,7 @@ or [one at a time](#project-by-project).
 
 | Step | What it does |
 |---|---|
-| Checklists | Copies the items **with the same ids**. While RedmineUP is installed, every issue of a project without our module is copied again, replacing an earlier copy (RedmineUP is still in use there); otherwise only issues without a checklist of ours. Items of deleted issues and empty items are skipped; texts are cut to 1000 characters. |
+| Checklists | Copies the items **with the same ids**. While RedmineUP is installed, every issue of a project without our module is copied again, replacing an earlier copy, and a copy whose RedmineUP checklist has since been emptied goes (RedmineUP is still in use there); otherwise only issues without a checklist of ours. Items of deleted issues and empty items are skipped; texts are cut to 1000 characters. |
 | Permissions | Every role that may view, tick or edit RedmineUP checklists gets the matching permission. |
 | Settings | Done ratio and block-closing take RedmineUP's values; the mail setting follows its "Checklist updated" notification event. |
 | Saved queries | RedmineUP's checklist column and filters in saved issue queries are replaced by ours. Queries that kept the old filter would fail once RedmineUP is gone. |

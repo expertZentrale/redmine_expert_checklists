@@ -73,5 +73,16 @@ class ExpertChecklistImportsControllerTest < Redmine::ControllerTest
     assert_response :forbidden
     assert_not Project.find(1).module_enabled?(:expert_checklists)
   end
+
+  def test_projects_without_issue_tracking_are_not_switched
+    RedmineExpertChecklists.stubs(:redmineup_present?).returns(true)
+    RedmineExpertChecklists.stubs(:legacy_module).returns('checklists')
+    EnabledModule.where(:project_id => 1, :name => 'issue_tracking').delete_all
+    @request.session[:user_id] = 1
+    post :switch_projects, :params => { :project_ids => ['1'] }
+    assert_redirected_to '/expert_checklists/legacy_import'
+    assert_include 'eCookbook', flash[:error]
+    assert_equal 0, ExpertChecklistItem.count
+  end
 end
 

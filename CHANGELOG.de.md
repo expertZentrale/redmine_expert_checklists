@@ -19,8 +19,9 @@
 ### Geändert
 
 - **Der Schritt Checklisten kopiert neu, was RedmineUP noch führt.** Solange RedmineUP installiert
-  ist, werden Tickets von Projekten ohne unser Modul erneut kopiert und eine frühere Kopie ersetzt,
-  statt nach der ersten Kopie übersprungen zu werden. Ist es entfernt, werden Tickets mit einer
+  ist, werden Tickets von Projekten ohne unser Modul erneut kopiert und eine frühere Kopie ersetzt
+  (oder entfernt, wenn die RedmineUP-Checkliste inzwischen leer ist), statt nach der ersten Kopie
+  übersprungen zu werden. Ist es entfernt, werden Tickets mit einer
   Checkliste von uns weiter übersprungen.
 - Der Schritt Projektmodul schaltet auch das eigene Modul von RedmineUP aus, wo es eines hat. Neben
   einem installierten RedmineUP ist er auf der Übernahmeseite nicht mehr vorausgewählt.

@@ -89,3 +89,4 @@ pt:
   button_expert_checklist_import_switch: "Mudar projetos"
   notice_expert_checklist_import_projects_done: "Mudados %{projects}: %{result}"
   error_expert_checklist_import_no_project: "Nada foi mudado - escolha pelo menos um projeto."
+  error_expert_checklist_import_project_without_issues: "Estes projetos não usam tarefas, não há nada para mudar: %{projects}"

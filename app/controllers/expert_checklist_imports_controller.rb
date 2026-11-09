@@ -33,6 +33,9 @@ class ExpertChecklistImportsController < ApplicationController
     import = RedmineExpertChecklists::LegacyImport.new(:projects => projects)
     if projects.empty?
       flash[:error] = l(:error_expert_checklist_import_no_project)
+    elsif import.ineligible_projects.any?
+      flash[:error] = l(:error_expert_checklist_import_project_without_issues,
+                        :projects => import.ineligible_projects.map(&:name).join(', '))
     elsif import.switch_blocked?
       flash[:error] = l(:text_expert_checklist_import_not_switchable)
     else

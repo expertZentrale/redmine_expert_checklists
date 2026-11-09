@@ -134,7 +134,7 @@ wechseln alle auf einmal (unten) oder [einzeln](#projektweise).
 
 | Schritt | Was er tut |
 |---|---|
-| Checklisten | Kopiert die Punkte **mit denselben IDs**. Solange RedmineUP installiert ist, wird jedes Ticket eines Projekts ohne unser Modul neu kopiert und eine frühere Kopie ersetzt (dort ist RedmineUP noch in Gebrauch); sonst nur Tickets ohne Checkliste von uns. Punkte gelöschter Tickets und leere Punkte werden übersprungen; Texte werden auf 1000 Zeichen gekürzt. |
+| Checklisten | Kopiert die Punkte **mit denselben IDs**. Solange RedmineUP installiert ist, wird jedes Ticket eines Projekts ohne unser Modul neu kopiert und eine frühere Kopie ersetzt; ist die RedmineUP-Checkliste inzwischen leer, verschwindet auch die Kopie (dort ist RedmineUP noch in Gebrauch); sonst nur Tickets ohne Checkliste von uns. Punkte gelöschter Tickets und leere Punkte werden übersprungen; Texte werden auf 1000 Zeichen gekürzt. |
 | Berechtigungen | Jede Rolle, die RedmineUP-Checklisten ansehen, abhaken oder bearbeiten darf, bekommt die passende Berechtigung. |
 | Einstellungen | % erledigt und die Sperre beim Schließen übernehmen die Werte von RedmineUP; die Mail-Einstellung richtet sich nach dessen Benachrichtigungsereignis „Checkliste aktualisiert“. |
 | Gespeicherte Abfragen | Die Checklisten-Spalte und -Filter von RedmineUP in gespeicherten Ticket-Abfragen werden durch unsere ersetzt. Abfragen mit dem alten Filter würden ohne RedmineUP fehlschlagen. |

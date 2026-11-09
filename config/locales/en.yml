@@ -89,3 +89,4 @@ en:
   button_expert_checklist_import_switch: "Switch projects"
   notice_expert_checklist_import_projects_done: "Switched %{projects}: %{result}"
   error_expert_checklist_import_no_project: "Nothing switched - choose at least one project."
+  error_expert_checklist_import_project_without_issues: "These projects do not use issue tracking, nothing to switch: %{projects}"

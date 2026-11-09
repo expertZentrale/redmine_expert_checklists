@@ -64,11 +64,18 @@ module RedmineExpertChecklists
     end
 
     # options: :force, :replace (see the rake task), :projects (Project
-    # records or ids; limits items, queries and modules to them).
+    # records or ids; limits items, queries and modules to them). :replace
+    # deletes items of every project, so it is ignored with :projects.
     def initialize(options = {})
-      @force = options[:force] ? true : false
-      @replace = options[:replace] ? true : false
       @projects = Array(options[:projects]).compact.map { |project| project.is_a?(Project) ? project : Project.find(project) }
+      @force = options[:force] ? true : false
+      @replace = options[:replace] && @projects.empty? ? true : false
+    end
+
+    # Chosen projects without issue tracking: the module step skips them, so
+    # their items and queries would change while RedmineUP stays on.
+    def ineligible_projects
+      projects.reject { |project| project.module_enabled?(:issue_tracking) }
     end
 
     def projects?
@@ -120,6 +127,9 @@ module RedmineExpertChecklists
       phases = Array(phases).map(&:to_s) & PHASES
       # Switching projects is all or nothing; a global run commits batch by batch.
       return run_phases(phases) unless projects?
+      if ineligible_projects.any?
+        raise ArgumentError, "Projects without issue tracking: #{ineligible_projects.map(&:identifier).join(', ')}"
+      end
 
       ActiveRecord::Base.transaction { run_phases(phases) }
     end
@@ -178,6 +188,7 @@ module RedmineExpertChecklists
         'blank_items' => blank,
         'long_items' => long,
         'issues_to_import' => pending_issue_ids.size,
+        'issues_to_clear' => emptied_issue_ids.size,
         'issues_already_imported' => issues - pending_issue_ids.size
       }
     end
@@ -189,8 +200,7 @@ module RedmineExpertChecklists
       @pending_issue_ids ||= begin
         condition =
           if RedmineExpertChecklists.redmineup_present?
-            "i.project_id NOT IN (SELECT em.project_id FROM #{EnabledModule.table_name} em " \
-            "WHERE em.name = '#{RedmineExpertChecklists::MODULE}')"
+            legacy_live_condition
           else
             "NOT EXISTS (SELECT 1 FROM #{ExpertChecklistItem.table_name} e WHERE e.issue_id = c.issue_id)"
           end
@@ -203,6 +213,26 @@ module RedmineExpertChecklists
       end
     end
 
+    # Issues RedmineUP still holds whose checklist was emptied there after an
+    # earlier copy: the copy goes too.
+    def emptied_issue_ids
+      return [] unless RedmineExpertChecklists.redmineup_present?
+
+      @emptied_issue_ids ||= connection.select_values(<<~SQL).map(&:to_i)
+        SELECT DISTINCT e.issue_id FROM #{ExpertChecklistItem.table_name} e
+        INNER JOIN issues i ON i.id = e.issue_id
+        WHERE #{legacy_live_condition}#{project_condition}
+          AND NOT EXISTS (SELECT 1 FROM checklists c WHERE c.issue_id = e.issue_id)
+        ORDER BY e.issue_id
+      SQL
+    end
+
+    # Issues aliased i in projects without our module.
+    def legacy_live_condition
+      "i.project_id NOT IN (SELECT em.project_id FROM #{EnabledModule.table_name} em " \
+        "WHERE em.name = '#{RedmineExpertChecklists::MODULE}')"
+    end
+
     def import_items
       return { 'imported' => 0 } unless self.class.available?
 
@@ -210,6 +240,9 @@ module RedmineExpertChecklists
       imported = 0
       renumbered = 0
       replaced = 0
+      emptied_issue_ids.each_slice(BATCH) do |ids|
+        replaced += ExpertChecklistItem.where(:issue_id => ids).delete_all
+      end
       pending_issue_ids.each_slice(BATCH) do |ids|
         ExpertChecklistItem.transaction do
           # An earlier copy of an issue RedmineUP still holds is out of date.
@@ -226,7 +259,7 @@ module RedmineExpertChecklists
         end
       end
       connection.reset_pk_sequence!(ExpertChecklistItem.table_name) if connection.respond_to?(:reset_pk_sequence!)
-      @pending_issue_ids = nil
+      @pending_issue_ids = @emptied_issue_ids = nil
       { 'imported' => imported + renumbered, 'new_ids' => renumbered, 'replaced' => replaced }
     end
 
@@ -266,7 +299,7 @@ module RedmineExpertChecklists
       return if EnabledModule.where(:name => RedmineExpertChecklists::MODULE.to_s).exists?
 
       ExpertChecklistItem.delete_all
-      @pending_issue_ids = nil
+      @pending_issue_ids = @emptied_issue_ids = nil
     end
 
     # ---- permissions -----------------------------------------------------

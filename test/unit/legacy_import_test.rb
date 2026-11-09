@@ -228,4 +228,39 @@ class LegacyImportTest < ActiveSupport::TestCase
     assert items.all?(&:new_record?)
     assert_equal ['Second issue'], RedmineExpertChecklists::LegacyImport.items_of(2).map(&:subject)
   end
+
+  def test_a_copy_goes_when_redmineup_emptied_the_checklist
+    redmineup_installed
+    ExpertChecklistItem.create!(:issue_id => 3, :subject => 'copied before it was emptied')
+    assert_equal 1, import.report['issues_to_clear']
+    import.run(%w(items))
+    assert_equal 0, ExpertChecklistItem.where(:issue_id => 3).count
+  end
+
+  def test_switched_projects_keep_items_redmineup_does_not_have
+    redmineup_installed
+    Project.find(1).enable_module!(:expert_checklists)
+    ExpertChecklistItem.create!(:issue_id => 3, :subject => 'mine')
+    import.run(%w(items))
+    assert_equal ['mine'], ExpertChecklistItem.where(:issue_id => 3).pluck(:subject)
+  end
+
+  def test_replace_is_ignored_when_switching_single_projects
+    redmineup_installed
+    other = Issue.where.not(:project_id => 1).first
+    insert_legacy_item(9010, other.id, 'Elsewhere')
+    ExpertChecklistItem.create!(:issue_id => other.id, :subject => 'Elsewhere')
+    import(:projects => [Project.find(1)], :replace => true).run(%w(items))
+    assert_equal ['Elsewhere'], ExpertChecklistItem.where(:issue_id => other.id).pluck(:subject)
+  end
+
+  def test_projects_without_issue_tracking_are_refused
+    redmineup_installed
+    EnabledModule.where(:project_id => 1, :name => 'issue_tracking').delete_all
+    switch = import(:projects => [Project.find(1)])
+    assert_equal [1], switch.ineligible_projects.map(&:id)
+    assert_raise(ArgumentError) { switch.run(RedmineExpertChecklists::LegacyImport::PROJECT_PHASES) }
+    assert_equal 0, ExpertChecklistItem.count
+  end
 end
+

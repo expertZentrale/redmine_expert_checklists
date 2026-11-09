@@ -89,3 +89,4 @@ fr:
   button_expert_checklist_import_switch: "Basculer les projets"
   notice_expert_checklist_import_projects_done: "Basculés %{projects} : %{result}"
   error_expert_checklist_import_no_project: "Rien n'a été basculé - choisissez au moins un projet."
+  error_expert_checklist_import_project_without_issues: "Ces projets n'utilisent pas le suivi des demandes, rien à basculer : %{projects}"

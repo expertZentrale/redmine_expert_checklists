@@ -5,7 +5,7 @@ namespace :redmine_expert_checklists do
       PROJECTS=a,b  switch only these projects (identifiers or ids) while RedmineUP stays installed
       DRY_RUN=1   only print what would be imported
       FORCE=1     run the queries/modules phases although RedmineUP is still in use
-      REPLACE=1   delete our items first (only while no project uses the module)
+      REPLACE=1   delete our items first (only while no project uses the module; not with PROJECTS)
   DESC
   task :legacy_import => :environment do
     projects = ENV['PROJECTS'].to_s.split(',').map(&:strip).reject(&:empty?).map do |key|
@@ -18,6 +18,10 @@ namespace :redmine_expert_checklists do
     import = RedmineExpertChecklists::LegacyImport.new(:force => ENV['FORCE'] == '1',
                                                         :replace => ENV['REPLACE'] == '1',
                                                         :projects => projects)
+    abort 'REPLACE=1 deletes the items of every project; leave it out with PROJECTS=.' if projects.any? && ENV['REPLACE'] == '1'
+    if import.ineligible_projects.any?
+      abort "Without issue tracking, nothing to switch: #{import.ineligible_projects.map(&:identifier).join(', ')}"
+    end
     if projects.any? && import.switch_blocked?
       abort 'RedmineUP Checklists cannot be switched off per project: its permissions belong to the ' \
             'issue tracking module. See README, "Moving from RedmineUP Checklists".'

@@ -19,8 +19,8 @@
 ### Changed
 
 - **The checklists step copies again what RedmineUP still holds.** While RedmineUP is installed,
-  issues of projects without our module are copied again, replacing an earlier copy, instead of
-  being skipped once copied. Once it is gone, issues with a checklist of ours are still skipped.
+  issues of projects without our module are copied again, replacing an earlier copy (or removing
+  it where RedmineUP's checklist has since been emptied), instead of being skipped once copied. Once it is gone, issues with a checklist of ours are still skipped.
 - The module step also switches RedmineUP's own module off where it has one. Next to an installed
   RedmineUP it is no longer preselected on the import page.
 

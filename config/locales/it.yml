@@ -89,3 +89,4 @@ it:
   button_expert_checklist_import_switch: "Passa i progetti"
   notice_expert_checklist_import_projects_done: "Passati %{projects}: %{result}"
   error_expert_checklist_import_no_project: "Nessun progetto passato - scegli almeno un progetto."
+  error_expert_checklist_import_project_without_issues: "Questi progetti non usano il tracking delle segnalazioni, non c'è nulla da passare: %{projects}"

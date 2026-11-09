@@ -54,4 +54,18 @@ class ExpertChecklistSettingsTabsTest < Redmine::ControllerTest
     assert_select 'table.ec-templates td.name a', :text => 'Global one'
     assert_select 'table.ec-template-categories td.name a', :text => 'Releases'
   end
+
+  # Every tab is rendered into the settings form (only hidden), so saving from
+  # the templates tab still sends the general settings.
+  def test_general_settings_render_their_saved_values_on_every_tab
+    with_checklist_settings(:done_ratio_from_checklist => '1', :block_issue_closing => '1',
+                            :legacy_import_done_at => '2026-11-09 12:00') do
+      @request.session[:user_id] = 1
+      get :plugin, :params => { :id => 'redmine_expert_checklists', :tab => 'categories' }
+      assert_response :success
+      assert_select '#tab-content-general input[type=checkbox][name=?][checked]', 'settings[done_ratio_from_checklist]'
+      assert_select '#tab-content-general input[type=checkbox][name=?][checked]', 'settings[block_issue_closing]'
+      assert_select '#tab-content-general input[name=?][value=?]', 'settings[legacy_import_done_at]', '2026-11-09 12:00'
+    end
+  end
 end

@@ -301,4 +301,23 @@ class IssuesControllerChecklistTest < Redmine::ControllerTest
     assert_select '[data-ec-editor] select.ec-template option', :text => 'Other tracker', :count => 0
     assert_select '[data-ec-editor] script.ec-templates'
   end
+
+  def test_template_text_cannot_break_out_of_its_script_element
+    add_template(:name => 'Nasty', :items => "</script><script>alert(1)</script>")
+    get :new, :params => { :project_id => 1, :issue => { :tracker_id => 1 } }
+    assert_response :success
+    assert_not_include '</script><script>alert(1)', response.body
+    assert_include '\\u003c/script\\u003e', response.body
+  end
+
+  def test_default_template_sets_the_done_ratio
+    add_default_template(:items => "[x] Reproduce\nFix")
+    @request.session[:user_id] = 3
+    with_settings(:issue_done_ratio => 'issue_field') do
+      with_checklist_settings(:done_ratio_from_checklist => '1') do
+        post :create, :params => { :project_id => 1, :issue => { :tracker_id => 1, :subject => 'Half done' } }
+      end
+    end
+    assert_equal 50, Issue.order(:id).last.done_ratio
+  end
 end

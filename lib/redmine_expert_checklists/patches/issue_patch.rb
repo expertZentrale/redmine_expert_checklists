@@ -70,6 +70,8 @@ module RedmineExpertChecklists
           return unless template
 
           template.build_items.each { |item| expert_checklist_items << item }
+          # Rows given like the form's: % Done follows them (before_save).
+          @expert_checklist_form = true
         end
 
         # The issue this one is being copied from (issues/new?copy_from=...).

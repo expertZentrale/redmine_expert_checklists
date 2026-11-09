@@ -18,6 +18,9 @@ Works on **Redmine 5.1, 6.0, 6.1 and 7.0**.
   the next item, drag the handle or press Alt+Up/Down to move one, paste several lines to add one
   item per line (`-- ` starts a section, `[x] ` marks an item done). Copying an issue copies its
   checklist; so do bulk copy, project copy and copied subtasks.
+- **Templates.** Reusable item lists for a project or for all projects, grouped by category. The
+  issue form adds one with *Add from template*; a template marked as default fills the checklist of
+  new issues. See [Templates](#templates).
 - **History.** One line per changed item ("Checklist item *Buy milk* done"). Reordering alone
   writes no history.
 - **Mails.** See [History and mails](#history-and-mails).
@@ -71,6 +74,28 @@ plugin shows nothing there and refuses its API.
 | View checklists | See the checklist, its history, the list column and filters; read the API |
 | Tick checklist items | Everything "View checklists" allows, plus ticking and unticking items on the issue page |
 | Edit checklists | Everything above, plus adding, renaming, reordering and deleting items in the issue form and through the API |
+| Manage checklist templates | Creating, changing and deleting the project's templates (project settings, tab *Checklist templates*) |
+
+## Templates
+
+A template is a list of items in the same format as a paste into the editor: one item per line,
+`-- ` starts a section, `[x] ` marks an item done.
+
+- **Project templates** are managed in the project settings (tab *Checklist templates*) by users
+  with *Manage checklist templates*. **Global templates** and **categories** are managed by
+  administrators in the plugin settings (tabs *Checklist templates* and *Template categories*;
+  drag categories to reorder them).
+- A template is for one tracker or for all trackers, and visible to everyone or only to its
+  author.
+- The issue form offers the project's and the global templates for the issue's tracker under
+  *Add from template*. Choosing one appends its items; items already in the list (same text) are
+  skipped.
+- **Default templates.** New issues start with the default template, chosen in this order: the
+  project's for the tracker, the project's for all trackers, the global one for the tracker, the
+  global one for all trackers. This applies to issues created with the form and through the REST
+  API, also when the author has no checklist permission. Issues created from mails and copies get
+  no default. In the form, an untouched default follows a change of tracker or project; once the
+  list was edited, it stays.
 
 ## Issue list
 
@@ -126,7 +151,8 @@ or [one at a time](#project-by-project).
 | Step | What it does |
 |---|---|
 | Checklists | Copies the items **with the same ids**. While RedmineUP is installed, every issue of a project without our module is copied again, replacing an earlier copy, and a copy whose RedmineUP checklist has since been emptied goes (RedmineUP is still in use there); otherwise only issues without a checklist of ours. Items of deleted issues and empty items are skipped; texts are cut to 1000 characters. |
-| Permissions | Every role that may view, tick or edit RedmineUP checklists gets the matching permission. |
+| Templates | Copies RedmineUP's templates and categories. While RedmineUP is installed, the templates of a project without our module are copied again; switched projects keep theirs. Global templates are added when missing and arrive as non-default, as RedmineUP only applied project defaults. |
+| Permissions | Every role that may view, tick or edit RedmineUP checklists, or manage its templates, gets the matching permission. |
 | Settings | Done ratio and block-closing take RedmineUP's values; the mail setting follows its "Checklist updated" notification event. |
 | Saved queries | RedmineUP's checklist column and filters in saved issue queries are replaced by ours. Queries that kept the old filter would fail once RedmineUP is gone. |
 | Project module | Switches *expert Checklists* on in every project that uses issue tracking, and for new projects. Where RedmineUP has a project module of its own (see below), that one goes off. |
@@ -159,8 +185,8 @@ The import page then shows *Switch project by project*:
 
 1. Import *Permissions* and *Settings* first; they apply to all projects.
 2. Choose projects and switch them. For each one, in a single transaction, this copies the
-   checklists of its issues again, converts the project's saved queries, switches *expert
-   Checklists* on and RedmineUP's module off. As a rake task:
+   checklists of its issues and its templates again, converts the project's saved queries, switches
+   *expert Checklists* on and RedmineUP's module off. As a rake task:
    `rake redmine_expert_checklists:legacy_import PROJECTS=one,two RAILS_ENV=production`.
 3. Once every project is switched, convert the remaining saved queries (those without a project)
    and remove RedmineUP; the import does not need to run again.
@@ -182,8 +208,10 @@ Differences to RedmineUP Checklists:
   page only.
 - Blocking the close only applies to the change to a closed status; notes on an issue that is
   already closed still work.
-- Templates and the checklist custom field are not part of this version yet. Their data stays in
-  RedmineUP's tables until a later version imports it.
+- The checklist custom field is not part of this version yet. Its data stays in RedmineUP's
+  tables until a later version imports it.
+- Default templates also fill issues created by users without a checklist permission, and global
+  templates can be defaults too.
 - RedmineUP Agile boards stop showing checklists on cards; boards of redmine_expert_agile can show
   the "Checklist" column.
 

@@ -11,6 +11,8 @@ class LegacyImportTest < ActiveSupport::TestCase
     RedmineExpertChecklists.stubs(:redmineup_present?).returns(false)
     RedmineExpertChecklists.stubs(:legacy_module).returns(nil)
     ActiveRecord::Base.connection.execute('DELETE FROM checklists')
+    ActiveRecord::Base.connection.execute('DELETE FROM checklist_templates')
+    ActiveRecord::Base.connection.execute('DELETE FROM checklist_template_categories')
     insert_legacy_item(9001, 1, ' Buy milk ', true, 1)
     insert_legacy_item(9002, 1, 'Shopping', false, 1, true)
     insert_legacy_item(9003, 2, 'Second issue', false, 1)
@@ -267,7 +269,7 @@ class LegacyImportTest < ActiveSupport::TestCase
     redmineup_installed
     EnabledModule.create!(:project_id => 1, :name => 'checklists')
     result = import(:projects => [Project.find(1)]).run(%w(modules))
-    assert_equal %w(items modules), result.keys
+    assert_equal %w(items templates modules), result.keys
     assert_equal 3, result['items']['imported']
     assert Project.find(1).module_enabled?(:expert_checklists)
   end
@@ -275,7 +277,7 @@ class LegacyImportTest < ActiveSupport::TestCase
   def test_phases_run_in_their_fixed_order
     redmineup_installed
     result = import(:projects => [Project.find(1)]).run(%w(modules queries items))
-    assert_equal %w(items queries modules), result.keys
+    assert_equal %w(items templates queries modules), result.keys
     assert_equal 3, result['items']['imported']
   end
 
@@ -293,9 +295,72 @@ class LegacyImportTest < ActiveSupport::TestCase
   def test_global_module_step_copies_items_first
     redmineup_installed
     result = import.run(%w(modules))
-    assert_equal %w(items modules), result.keys
+    assert_equal %w(items templates modules), result.keys
     assert_equal 3, result['items']['imported']
     assert Project.find(1).module_enabled?(:expert_checklists)
   end
-end
 
+  def test_templates_arrive_with_categories_authors_and_visibility
+    connection = ActiveRecord::Base.connection
+    connection.execute("INSERT INTO checklist_template_categories (id, name, position) VALUES (7, 'Releases', 1)")
+    insert_legacy_template(1, nil, 'Global', "-- Prep\r\nTag", :category_id => 7, :is_default => true, :user_id => 3)
+    insert_legacy_template(2, 1, 'Bugs', "Reproduce\r\nFix", :is_default => true, :tracker_id => 1,
+                           :is_public => false)
+    assert_equal 2, import.report['legacy_templates']
+    assert_equal 1, import.report['legacy_default_templates']
+
+    result = import.run(%w(templates))['templates']
+    assert_equal({ 'templates' => 2, 'replaced' => 0, 'categories' => 1 }, result)
+    global = ExpertChecklistTemplate.find_by(:name => 'Global')
+    assert_nil global.project_id
+    assert_not global.is_default?, 'RedmineUP never applied global defaults'
+    assert_equal "-- Prep\nTag", global.items
+    assert_equal ['Releases', 3, true], [global.category.name, global.author_id, global.is_public?]
+    bugs = ExpertChecklistTemplate.find_by(:name => 'Bugs')
+    assert_equal [1, 1, true, false], [bugs.project_id, bugs.tracker_id, bugs.is_default?, bugs.is_public?]
+  end
+
+  def test_templates_run_again_add_nothing_once_redmineup_is_gone
+    insert_legacy_template(1, nil, 'Global', 'Tag')
+    insert_legacy_template(2, 1, 'Bugs', 'Fix')
+    import.run(%w(templates))
+    assert_equal({ 'templates' => 0, 'replaced' => 0, 'categories' => 0 }, import.run(%w(templates))['templates'])
+    assert_equal 2, ExpertChecklistTemplate.count
+  end
+
+  def test_templates_of_projects_still_on_redmineup_are_copied_again
+    redmineup_installed
+    insert_legacy_template(2, 1, 'Bugs', 'Fix')
+    import.run(%w(templates))
+    ActiveRecord::Base.connection.execute("UPDATE checklist_templates SET template_items = 'Fix\nTest' WHERE id = 2")
+    result = import.run(%w(templates))['templates']
+    assert_equal 1, result['replaced']
+    assert_equal "Fix\nTest", ExpertChecklistTemplate.find_by(:name => 'Bugs').items
+  end
+
+  def test_switched_projects_keep_their_templates
+    redmineup_installed
+    Project.find(1).enable_module!(:expert_checklists)
+    add_template(:name => 'Mine')
+    insert_legacy_template(2, 1, 'Bugs', 'Fix')
+    import.run(%w(templates))
+    assert_equal ['Mine'], ExpertChecklistTemplate.where(:project_id => 1).pluck(:name)
+  end
+
+  def test_switching_a_project_takes_its_templates_and_the_global_ones
+    redmineup_installed
+    other = Issue.where.not(:project_id => 1).first.project_id
+    insert_legacy_template(1, nil, 'Global', 'Tag')
+    insert_legacy_template(2, 1, 'Mine', 'Fix')
+    insert_legacy_template(3, other, 'Theirs', 'Fix')
+    import(:projects => [Project.find(1)]).run(RedmineExpertChecklists::LegacyImport::PROJECT_PHASES)
+    assert_equal %w(Global Mine), ExpertChecklistTemplate.order(:name).pluck(:name)
+  end
+
+  def test_template_permission_follows_the_legacy_one
+    role = Role.find(2)
+    role.add_permission!(:manage_checklist_templates)
+    import.run(%w(permissions))
+    assert role.reload.permissions.include?(:manage_expert_checklist_templates)
+  end
+end

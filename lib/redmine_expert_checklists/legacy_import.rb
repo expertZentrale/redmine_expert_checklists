@@ -24,16 +24,17 @@ module RedmineExpertChecklists
   # checklists on every issue, and saved queries converted while projects
   # still use RedmineUP find nothing there.
   class LegacyImport
-    PHASES = %w(items permissions settings queries modules).freeze
+    PHASES = %w(items templates permissions settings queries modules).freeze
     NEEDS_REDMINEUP_GONE = %w(queries modules).freeze
     # Switching single projects; permissions and settings are global steps.
-    PROJECT_PHASES = %w(items queries modules).freeze
+    PROJECT_PHASES = %w(items templates queries modules).freeze
     BATCH = 500
 
     PERMISSIONS = {
       :view_checklists => :view_expert_checklists,
       :done_checklists => :done_expert_checklists,
-      :edit_checklists => :edit_expert_checklists
+      :edit_checklists => :edit_expert_checklists,
+      :manage_checklist_templates => :manage_expert_checklist_templates
     }.freeze
     COLUMNS = { :checklist_relations => :expert_checklist }.freeze
     FILTERS = { 'checklists_status' => 'expert_checklist_status',
@@ -109,6 +110,7 @@ module RedmineExpertChecklists
                  'legacy_table' => self.class.available?,
                  'switchable' => RedmineExpertChecklists.legacy_switchable? }
       result.merge!(items_report) if result['legacy_table']
+      result.merge!(templates_report)
       result['roles'] = roles_to_update.size
       result['queries'] = queries_to_convert.size
       result['projects'] = projects_to_enable.size
@@ -130,9 +132,9 @@ module RedmineExpertChecklists
     # be copied while RedmineUP still holds the issues, before modules.
     def run(phases)
       phases = PHASES & Array(phases).map(&:to_s)
-      # Switching our module on without copying the items would hide them
-      # (and RedmineUP's module goes off with it).
-      phases = PHASES & (phases + ['items']) if phases.include?('modules') && !blocked?('modules')
+      # Switching our module on without copying items and templates would hide
+      # them (and RedmineUP's module goes off with it).
+      phases = PHASES & (phases + %w(items templates)) if phases.include?('modules') && !blocked?('modules')
       # Switching projects is all or nothing; a global run commits batch by batch.
       return run_phases(phases) unless projects?
       if ineligible_projects.any?
@@ -308,6 +310,109 @@ module RedmineExpertChecklists
 
       ExpertChecklistItem.delete_all
       @pending_issue_ids = @emptied_issue_ids = nil
+    end
+
+    # ---- templates -------------------------------------------------------
+    #
+    # Nothing refers to a template by id, so templates are matched by project
+    # and name, categories by name. Project templates follow the items rule:
+    # while RedmineUP is installed, those of projects without our module are
+    # RedmineUP's and copied again (replacing earlier copies), switched
+    # projects keep theirs; once it is gone, only projects without templates
+    # of ours get RedmineUP's. Global templates are added when missing.
+    # RedmineUP applied project defaults only, so global ones arrive as
+    # non-default.
+
+    def templates_available?
+      connection.table_exists?('checklist_templates')
+    end
+
+    def templates_report
+      return { 'legacy_templates' => 0, 'legacy_default_templates' => 0 } unless templates_available?
+
+      rows = legacy_template_rows
+      { 'legacy_templates' => rows.size,
+        'legacy_default_templates' => rows.count { |row| row['project_id'] && LegacyDiff.truthy?(row['is_default']) } }
+    end
+
+    # RedmineUP's templates in scope (global ones and those of the run's
+    # projects), of existing projects; project_id 0 counts as global.
+    def legacy_template_rows
+      columns = %w(id name project_id category_id user_id is_public template_items)
+      columns += %w(is_default tracker_id) if connection.column_exists?(:checklist_templates, :is_default)
+      rows = connection.select_all("SELECT #{columns.join(', ')} FROM checklist_templates ORDER BY id").to_a
+      existing = Project.where(:id => rows.map { |row| row['project_id'].to_i }.reject(&:zero?).uniq).pluck(:id)
+      rows.each { |row| row['project_id'] = row['project_id'].to_i.zero? ? nil : row['project_id'].to_i }
+      rows.select do |row|
+        next true if row['project_id'].nil?
+
+        existing.include?(row['project_id']) && (!projects? || project_ids.include?(row['project_id']))
+      end
+    end
+
+    def import_templates
+      return { 'templates' => 0 } unless templates_available?
+
+      rows = legacy_template_rows
+      categories = import_template_categories
+      project_ids_with_rows = rows.map { |row| row['project_id'] }.compact.uniq
+      replaced = 0
+      if RedmineExpertChecklists.redmineup_present?
+        # Also projects whose RedmineUP templates are gone since an earlier copy.
+        candidates = projects? ? project_ids : project_ids_with_rows | ExpertChecklistTemplate.where.not(:project_id => nil).distinct.pluck(:project_id)
+        skip_projects = EnabledModule.where(:name => RedmineExpertChecklists::MODULE.to_s,
+                                            :project_id => candidates).pluck(:project_id)
+        replaced = ExpertChecklistTemplate.where(:project_id => candidates - skip_projects).delete_all
+      else
+        skip_projects = ExpertChecklistTemplate.where(:project_id => project_ids_with_rows).distinct.pluck(:project_id)
+      end
+      taken = ExpertChecklistTemplate.global.pluck(:name).map { |name| name.to_s.strip.downcase }
+      imported = 0
+      rows.each do |row|
+        if row['project_id']
+          next if skip_projects.include?(row['project_id'])
+        else
+          key = row['name'].to_s.strip.downcase
+          next if taken.include?(key)
+
+          taken << key
+        end
+        imported += 1 if build_template(row, categories).save
+      end
+      { 'templates' => imported, 'replaced' => replaced, 'categories' => categories[:created] }
+    end
+
+    def build_template(row, categories)
+      template = ExpertChecklistTemplate.new
+      template.name = row['name'].to_s.strip[0, 255]
+      template.project_id = row['project_id']
+      template.category_id = categories[row['category_id'].to_i]
+      template.tracker_id = row['tracker_id'].to_i.zero? ? nil : row['tracker_id'].to_i
+      template.author_id = row['user_id']
+      template.is_public = LegacyDiff.truthy?(row['is_public'])
+      template.is_default = row['project_id'].present? && LegacyDiff.truthy?(row['is_default'])
+      template.items = row['template_items'].to_s
+      template
+    end
+
+    # Legacy category id => ours, by name; missing ones are created in
+    # RedmineUP's order. :created counts them.
+    def import_template_categories
+      map = { :created => 0 }
+      return map unless connection.table_exists?('checklist_template_categories')
+
+      ours = ExpertChecklistTemplateCategory.all.index_by { |category| category.name.to_s.strip.downcase }
+      connection.select_all('SELECT id, name FROM checklist_template_categories ORDER BY position, id').each do |row|
+        key = row['name'].to_s.strip.downcase
+        next if key.empty?
+
+        unless ours[key]
+          ours[key] = ExpertChecklistTemplateCategory.create!(:name => row['name'].to_s.strip[0, 255])
+          map[:created] += 1
+        end
+        map[row['id'].to_i] = ours[key].id
+      end
+      map
     end
 
     # ---- permissions -----------------------------------------------------

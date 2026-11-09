@@ -1,0 +1,8 @@
+<%# Global templates; links only: this tab sits inside the plugin settings form. %>
+<div class="contextual">
+  <%= link_to expert_checklist_icon('add', l(:label_expert_checklist_template_new)),
+              new_expert_checklist_template_path, :class => 'icon icon-add' %>
+</div>
+<div class="ec-tab-intro"><%= l(:text_expert_checklist_templates_global) %></div>
+<%= render :partial => 'expert_checklist_templates/list',
+           :locals => { :templates => ExpertChecklistTemplate.global.includes(:category, :tracker, :author).sorted.to_a } %>

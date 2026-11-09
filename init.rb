@@ -29,11 +29,12 @@ require File.expand_path('../lib/redmine_expert_checklists/patches/journal_patch
 require File.expand_path('../lib/redmine_expert_checklists/patches/issues_helper_patch', __FILE__)
 require File.expand_path('../lib/redmine_expert_checklists/patches/issue_query_patch', __FILE__)
 require File.expand_path('../lib/redmine_expert_checklists/patches/queries_helper_patch', __FILE__)
+require File.expand_path('../lib/redmine_expert_checklists/patches/projects_helper_patch', __FILE__)
 
 Redmine::Plugin.register :redmine_expert_checklists do
   name 'Redmine expert Checklists'
   author 'Dennis Buehring'
-  description 'Checklists on issues: tick items on the issue page, edit them in the issue form, see every change in the history and get one bundled mail instead of one per click. REST API, issue list column and filters, import from RedmineUP Checklists.'
+  description 'Checklists on issues: tick items on the issue page, edit them in the issue form, see every change in the history and get one bundled mail instead of one per click. Templates, REST API, issue list column and filters, import from RedmineUP Checklists.'
   version '0.2.0'
   url 'https://github.com/expertZentrale/redmine_expert_checklists'
   requires_redmine :version_or_higher => '5.0'
@@ -66,6 +67,9 @@ Redmine::Plugin.register :redmine_expert_checklists do
                { :expert_checklist_items => [:index, :show, :done] }
     permission :edit_expert_checklists,
                { :expert_checklist_items => [:index, :show, :create, :update, :destroy, :done] }
+    # Templates of the project (settings tab); global ones are for admins.
+    permission :manage_expert_checklist_templates,
+               { :expert_checklist_templates => [:new, :create, :edit, :update, :destroy] }
   end
 
   menu_options = { :caption => :label_expert_checklists }
@@ -87,4 +91,8 @@ RedmineExpertChecklists::Patches::JournalPatch.apply!
 RedmineExpertChecklists::Patches::IssuesHelperPatch.apply!
 RedmineExpertChecklists::Patches::IssueQueryPatch.apply!
 RedmineExpertChecklists::Patches::QueriesHelperPatch.apply!
+RedmineExpertChecklists::Patches::ProjectsHelperPatch.apply!
 IssuesController.send(:helper, :expert_checklists)
+# Project settings tab and plugin settings tabs list templates.
+ProjectsController.send(:helper, :expert_checklists)
+SettingsController.send(:helper, :expert_checklists)

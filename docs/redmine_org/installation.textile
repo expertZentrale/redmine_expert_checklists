@@ -35,7 +35,7 @@ Then restart Redmine so the plugin is loaded.
 h3. 3. Switch it on
 
 * Enable the project module *expert Checklists* in the projects that should use it (or let the RedmineUP import do it, see below).
-* Grant the permissions *View checklists*, *Tick checklist items* and *Edit checklists* to the roles under _Administration » Roles and permissions_.
+* Grant the permissions *View checklists*, *Tick checklist items*, *Edit checklists* and, for project templates, *Manage checklist templates* to the roles under _Administration » Roles and permissions_. Global templates and template categories are managed by administrators in the plugin settings.
 * Optional settings under _Administration » expert Checklists_: mails for checklist changes, % Done from the checklist, block closing while items are open.
 
 h3. 4. Optional: coming from RedmineUP Checklists
@@ -44,7 +44,7 @@ Both plugins can run side by side; ours stays invisible until its module is swit
 
 # Open _Administration » expert Checklists » Open the import_ and check what it found. Nothing is written yet.
 # Back up the database, remove @plugins/redmine_checklists@ and restart. Do *not* run @redmine:plugins:migrate NAME=redmine_checklists VERSION=0@ - that drops the tables to import from.
-# Run the import with all steps: items (with their ids), permissions, settings, saved queries, project module. Every step can run again.
+# Run the import with all steps: items (with their ids), templates, permissions, settings, saved queries, project module. Every step can run again.
 
 For large installations the same import runs as @bundle exec rake redmine_expert_checklists:legacy_import RAILS_ENV=production@ (@DRY_RUN=1@ to see the counts first).
 

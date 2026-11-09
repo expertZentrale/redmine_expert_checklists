@@ -22,6 +22,9 @@ Läuft mit **Redmine 5.1, 6.0, 6.1 und 7.0**.
   Abschnitt, `[x] ` markiert einen Punkt als erledigt). Beim Kopieren eines Tickets wird die
   Checkliste mitkopiert, ebenso beim Massenkopieren, beim Kopieren eines Projekts und bei kopierten
   Unteraufgaben.
+- **Vorlagen.** Wiederverwendbare Punktlisten für ein Projekt oder für alle Projekte, nach
+  Kategorien gegliedert. Das Ticketformular fügt eine über *Aus Vorlage einfügen* ein; eine als
+  Standard markierte Vorlage füllt die Checkliste neuer Tickets. Siehe [Vorlagen](#vorlagen).
 - **Verlauf.** Eine Zeile je geändertem Punkt („Checkliste: Punkt *Milch kaufen* erledigt“).
   Reines Umsortieren schreibt keinen Verlauf.
 - **Mails.** Siehe [Verlauf und Mails](#verlauf-und-mails).
@@ -80,6 +83,28 @@ Plugin dort nichts und lehnt seine API ab.
 | Checklisten ansehen | Checkliste, ihren Verlauf, Listenspalte und Filter sehen; die API lesen |
 | Checklistenpunkte abhaken | Alles, was „Checklisten ansehen“ erlaubt, dazu Punkte auf der Ticketseite abhaken und das Häkchen entfernen |
 | Checklisten bearbeiten | Alles oben, dazu Punkte im Ticketformular und über die API hinzufügen, umbenennen, umsortieren und löschen |
+| Checklisten-Vorlagen verwalten | Vorlagen des Projekts anlegen, ändern und löschen (Projektkonfiguration, Reiter *Checklisten-Vorlagen*) |
+
+## Vorlagen
+
+Eine Vorlage ist eine Liste von Punkten im selben Format wie beim Einfügen in den Editor: ein Punkt
+pro Zeile, `-- ` beginnt einen Abschnitt, `[x] ` markiert einen Punkt als erledigt.
+
+- **Projektvorlagen** werden in der Projektkonfiguration (Reiter *Checklisten-Vorlagen*) von
+  Benutzern mit *Checklisten-Vorlagen verwalten* gepflegt. **Globale Vorlagen** und **Kategorien**
+  pflegen Administratoren in den Plugin-Einstellungen (Reiter *Checklisten-Vorlagen* und
+  *Vorlagen-Kategorien*; Kategorien lassen sich durch Ziehen umsortieren).
+- Eine Vorlage gilt für einen Tracker oder für alle Tracker und ist für alle sichtbar oder nur für
+  ihren Autor.
+- Das Ticketformular bietet unter *Aus Vorlage einfügen* die Vorlagen des Projekts und die globalen
+  für den Tracker des Tickets an. Die gewählte hängt ihre Punkte an; Punkte, die schon in der Liste
+  stehen (gleicher Text), werden übersprungen.
+- **Standardvorlagen.** Neue Tickets starten mit der Standardvorlage, gewählt in dieser
+  Reihenfolge: die des Projekts für den Tracker, die des Projekts für alle Tracker, die globale für
+  den Tracker, die globale für alle Tracker. Das gilt für Tickets aus dem Formular und über die
+  REST-API, auch wenn der Autor keine Checklisten-Berechtigung hat. Tickets aus Mails und Kopien
+  bekommen keinen Standard. Im Formular folgt ein unveränderter Standard einem Wechsel von Tracker
+  oder Projekt; wurde die Liste bearbeitet, bleibt sie.
 
 ## Ticketliste
 
@@ -135,7 +160,8 @@ wechseln alle auf einmal (unten) oder [einzeln](#projektweise).
 | Schritt | Was er tut |
 |---|---|
 | Checklisten | Kopiert die Punkte **mit denselben IDs**. Solange RedmineUP installiert ist, wird jedes Ticket eines Projekts ohne unser Modul neu kopiert und eine frühere Kopie ersetzt; ist die RedmineUP-Checkliste inzwischen leer, verschwindet auch die Kopie (dort ist RedmineUP noch in Gebrauch); sonst nur Tickets ohne Checkliste von uns. Punkte gelöschter Tickets und leere Punkte werden übersprungen; Texte werden auf 1000 Zeichen gekürzt. |
-| Berechtigungen | Jede Rolle, die RedmineUP-Checklisten ansehen, abhaken oder bearbeiten darf, bekommt die passende Berechtigung. |
+| Vorlagen | Kopiert die Vorlagen und Kategorien von RedmineUP. Solange RedmineUP installiert ist, werden die Vorlagen eines Projekts ohne unser Modul neu kopiert; umgestellte Projekte behalten ihre. Globale Vorlagen kommen hinzu, wenn sie fehlen, und zwar ohne Standard-Kennzeichen, weil RedmineUP nur Projekt-Standards angewendet hat. |
+| Berechtigungen | Jede Rolle, die RedmineUP-Checklisten ansehen, abhaken oder bearbeiten oder seine Vorlagen verwalten darf, bekommt die passende Berechtigung. |
 | Einstellungen | % erledigt und die Sperre beim Schließen übernehmen die Werte von RedmineUP; die Mail-Einstellung richtet sich nach dessen Benachrichtigungsereignis „Checkliste aktualisiert“. |
 | Gespeicherte Abfragen | Die Checklisten-Spalte und -Filter von RedmineUP in gespeicherten Ticket-Abfragen werden durch unsere ersetzt. Abfragen mit dem alten Filter würden ohne RedmineUP fehlschlagen. |
 | Projektmodul | Schaltet *expert Checklisten* in jedem Projekt mit Ticket-Tracking ein, und für neue Projekte. Hat RedmineUP ein eigenes Projektmodul (siehe unten), geht das dort aus. |
@@ -168,8 +194,8 @@ Die Übernahmeseite zeigt dann *Projektweise umstellen*:
 
 1. Zuerst *Berechtigungen* und *Einstellungen* übernehmen; sie gelten für alle Projekte.
 2. Projekte wählen und umstellen. Für jedes Projekt werden in einer Transaktion die Checklisten
-   seiner Tickets neu kopiert, die gespeicherten Abfragen des Projekts umgestellt, *expert
-   Checklisten* ein- und das Modul von RedmineUP ausgeschaltet. Als Rake-Task:
+   seiner Tickets und seine Vorlagen neu kopiert, die gespeicherten Abfragen des Projekts
+   umgestellt, *expert Checklisten* ein- und das Modul von RedmineUP ausgeschaltet. Als Rake-Task:
    `rake redmine_expert_checklists:legacy_import PROJECTS=eins,zwei RAILS_ENV=production`.
 3. Sind alle Projekte umgestellt, die übrigen gespeicherten Abfragen (die ohne Projekt) umstellen
    und RedmineUP entfernen; die Übernahme muss danach nicht noch einmal laufen.
@@ -191,8 +217,10 @@ Unterschiede zu RedmineUP Checklists:
   allein hakt man nur auf der Ticketseite ab.
 - Die Sperre beim Schließen gilt nur für den Wechsel auf einen geschlossenen Status; Notizen an
   einem bereits geschlossenen Ticket gehen weiter.
-- Vorlagen und das Checklisten-Benutzerfeld gehören noch nicht zu dieser Version. Ihre Daten
-  bleiben in den Tabellen von RedmineUP, bis eine spätere Version sie übernimmt.
+- Das Checklisten-Benutzerfeld gehört noch nicht zu dieser Version. Seine Daten bleiben in den
+  Tabellen von RedmineUP, bis eine spätere Version sie übernimmt.
+- Standardvorlagen füllen auch Tickets von Benutzern ohne Checklisten-Berechtigung, und auch globale
+  Vorlagen können Standard sein.
 - RedmineUP-Agile-Boards zeigen auf den Karten keine Checklisten mehr; Boards von
   redmine_expert_agile können die Spalte „Checkliste“ anzeigen.
 

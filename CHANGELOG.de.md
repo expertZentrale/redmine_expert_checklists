@@ -6,6 +6,18 @@
 
 ## [Unreleased]
 
+### Hinzugefügt
+
+- **Checklisten-Vorlagen.** Wiederverwendbare Punktlisten für ein Projekt (Projektkonfiguration,
+  Reiter *Checklisten-Vorlagen*, Berechtigung *Checklisten-Vorlagen verwalten*) oder für alle
+  Projekte (Plugin-Einstellungen, Administratoren), für einen Tracker oder alle, öffentlich oder
+  privat, nach Kategorien gegliedert. Das Ticketformular hängt eine über *Aus Vorlage einfügen* an.
+  Eine Standardvorlage füllt neue Tickets aus dem Formular und über die REST-API: Projekt vor
+  global, Tracker vor allen Trackern. Ein unveränderter Standard folgt im Formular einem Wechsel von
+  Tracker oder Projekt.
+- Die Übernahme kopiert die Vorlagen und Kategorien von RedmineUP (Schritt *Vorlagen*, auch beim
+  projektweisen Umstellen) und überträgt dessen Berechtigung *Vorlagen verwalten*.
+
 ## [0.2.0] - 2026-11-09
 
 ### Hinzugefügt

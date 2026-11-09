@@ -100,4 +100,14 @@ class ExpertChecklistsApiTest < Redmine::ApiTest::Base
         :headers => credentials('jsmith')
     assert_include 'Old name', @issue.reload.expert_checklist_items.map(&:subject)
   end
+
+  def test_create_through_the_api_starts_with_the_default_template
+    add_template(:name => 'Default', :items => "One\nTwo", :is_default => true)
+    post '/projects/1/issues.json', :params => { :issue => { :tracker_id => 1, :subject => 'From the API' } },
+                                    :headers => credentials('jsmith')
+    assert_response :created
+    issue = Issue.order(:id).last
+    assert_equal 'From the API', issue.subject
+    assert_equal %w(One Two), issue.expert_checklist_items.map(&:subject)
+  end
 end

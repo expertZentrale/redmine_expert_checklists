@@ -20,6 +20,7 @@ module RedmineExpertChecklists
           accepts_nested_attributes_for :expert_checklist_items, :allow_destroy => true
 
           safe_attributes 'expert_checklist_items_attributes', 'expert_checklist_form',
+                          'expert_checklist_template_id',
                           :if => lambda { |issue, user| RedmineExpertChecklists.editable?(issue, user) }
 
           before_save :expert_checklists_update_done_ratio
@@ -51,6 +52,26 @@ module RedmineExpertChecklists
 
         def expert_checklist_form
           @expert_checklist_form ? '1' : nil
+        end
+
+        # The default template the new-issue form was filled from; sent back
+        # when the form is refreshed (tracker or project changed), so an
+        # untouched default can be swapped for the new one.
+        attr_accessor :expert_checklist_template_id
+
+        # Called before a new issue is saved through the issues controller
+        # (form and REST API, see Hooks): without checklist rows it starts with
+        # the default template. Copies and mail-created issues do not.
+        def expert_checklists_apply_default_template(user = User.current)
+          return unless new_record? && !@expert_checklist_form && @copied_from.nil?
+          return if expert_checklist_items.any?
+
+          template = ExpertChecklistTemplate.default_for(project, tracker, user)
+          return unless template
+
+          template.build_items.each { |item| expert_checklist_items << item }
+          # Rows given like the form's: % Done follows them (before_save).
+          @expert_checklist_form = true
         end
 
         # The issue this one is being copied from (issues/new?copy_from=...).

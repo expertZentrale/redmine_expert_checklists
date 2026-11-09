@@ -1,0 +1,7 @@
+<%= title [l(:label_expert_checklist_template_categories), plugin_settings_path('redmine_expert_checklists', :tab => 'categories')],
+          @category.name %>
+<%= labelled_form_for @category, :as => :expert_checklist_template_category,
+                      :url => expert_checklist_template_category_path(@category), :html => { :method => :patch } do |f| %>
+  <%= render :partial => 'form', :locals => { :f => f } %>
+  <%= submit_tag l(:button_save) %>
+<% end %>

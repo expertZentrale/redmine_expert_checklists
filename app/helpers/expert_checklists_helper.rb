@@ -23,14 +23,46 @@ module ExpertChecklistsHelper
 
   # Items the form editor starts with: the in-memory association (it carries
   # the user's unsaved rows when the form is re-rendered after a refresh or a
-  # validation error), or the source issue's items on a copy form.
+  # validation error), the source issue's items on a copy form, or on a new
+  # issue the default template. A default the user has not touched follows a
+  # change of tracker or project. Sets @expert_checklist_default_template.
   def expert_checklist_form_items(issue)
+    @expert_checklist_default_template = nil
     items = issue.expert_checklist_items.reject(&:marked_for_destruction?)
-    if items.empty? && issue.new_record? && issue.expert_checklist_form.nil?
-      source = issue.expert_checklists_copy_source
-      items = RedmineExpertChecklists.copy_source_items(source) if source && source.id
+    if issue.new_record?
+      applied = issue.expert_checklist_template_id.presence &&
+                ExpertChecklistTemplate.find_by(:id => issue.expert_checklist_template_id)
+      untouched = applied && applied.matches?(items)
+      if (items.empty? && issue.expert_checklist_form.nil?) || untouched
+        source = issue.expert_checklists_copy_source
+        if source && source.id
+          items = RedmineExpertChecklists.copy_source_items(source)
+        else
+          default = ExpertChecklistTemplate.default_for(issue.project, issue.tracker)
+          @expert_checklist_default_template = default
+          # Same default again: keep the rows, ticks included.
+          items = default ? default.build_items : [] unless untouched && default == applied
+        end
+      end
     end
     items.sort_by.with_index { |item, index| [item.position.to_i, index] }
+  end
+
+  # The "Add from template" menu: [category name or nil, templates] pairs,
+  # uncategorized first, then by category order.
+  def expert_checklist_template_groups(issue)
+    return [] unless issue.project
+
+    templates = ExpertChecklistTemplate.available_for(issue.project, issue.tracker).
+      includes(:category).sorted.to_a
+    templates.group_by(&:category).sort_by do |category, _|
+      category ? [1, category.position.to_i, category.name.to_s] : [0, 0, '']
+    end.map { |category, list| [category && category.name, list] }
+  end
+
+  # Template id => item rows, read by the editor script.
+  def expert_checklist_templates_json(groups)
+    groups.flat_map(&:last).each_with_object({}) { |template, map| map[template.id] = template.rows }.to_json
   end
 
   def expert_checklist_config
@@ -42,6 +74,7 @@ module ExpertChecklistsHelper
         :moveUp => l(:label_expert_checklist_move_up),
         :moveDown => l(:label_expert_checklist_move_down),
         :moved => l(:text_expert_checklist_moved),
+        :templateAdded => l(:text_expert_checklist_template_added),
         :saveFailed => l(:error_expert_checklist_save_failed),
         :hideDone => l(:label_expert_checklist_hide_done),
         :showDone => l(:label_expert_checklist_show_done)

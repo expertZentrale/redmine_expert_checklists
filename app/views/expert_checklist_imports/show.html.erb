@@ -46,6 +46,9 @@
               <% else %>
                 &mdash;
               <% end %>
+            <% when 'templates' %>
+              <%= l(:text_expert_checklist_import_templates,
+                    :count => @report['legacy_templates'], :defaults => @report['legacy_default_templates']) %>
             <% when 'permissions' %>
               <%= l(:text_expert_checklist_import_roles, :count => @report['roles']) %>
             <% when 'settings' %>

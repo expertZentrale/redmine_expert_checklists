@@ -4,14 +4,15 @@ h3. Features
 
 * *Issue page:* checklist block under the description with sections, progress and "Hide done". Ticking saves without a page reload; the edit form on the same page stays in step.
 * *Issue form:* add, rename, tick, delete and reorder items (drag or Alt+Up/Down). Paste several lines to add one item per line; @--@ starts a section, @[x]@ marks an item done.
+* *Templates:* reusable item lists per project or for all projects, per tracker, public or private, grouped by categories. "Add from template" in the issue form; a default template fills new issues (form and REST API).
 * *History:* one line per changed item ("Checklist item _Buy milk_ done"), also in notification mails and the PDF export. Users without any checklist permission see neither the lines nor the mails.
 * *Bundled mails:* ticks by the same user within 60 seconds share one history entry and one notification, sent once the user stops. Pending mails are stored, so neither a restart nor a failing mail queue loses them. Setting: like issue updates, always or never.
 * *% Done from the checklist* and *block closing while items are open* (both optional).
 * *Copying* an issue copies its checklist, including bulk copy, project copy and subtasks.
 * *Issue list:* "Checklist" column (also CSV and PDF) and filters by item state and item text.
 * *REST API* (JSON and XML) for items, plus nested items on the issue API. Paths and field names of RedmineUP Checklists keep working once that plugin is removed.
-* *Import from RedmineUP Checklists:* items with their ids, permissions, settings, saved queries and the project module, with a dry run first, for all projects at once or project by project. RedmineUP's history entries stay readable.
-* Project module *expert Checklists* with the permissions view, tick and edit.
+* *Import from RedmineUP Checklists:* items with their ids, templates, permissions, settings, saved queries and the project module, with a dry run first, for all projects at once or project by project. RedmineUP's history entries stay readable.
+* Project module *expert Checklists* with the permissions view, tick, edit and manage templates.
 
 h3. Languages
 

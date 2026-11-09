@@ -1,7 +1,11 @@
 <% items = expert_checklist_form_items(issue) %>
+<% template_groups = expert_checklist_template_groups(issue) %>
 <div class="expert-checklist-editor" data-ec-editor>
   <label class="ec-editor-label"><%= l(:label_expert_checklist) %></label>
   <%= hidden_field_tag 'issue[expert_checklist_form]', '1', :id => nil %>
+  <% if @expert_checklist_default_template %>
+    <%= hidden_field_tag 'issue[expert_checklist_template_id]', @expert_checklist_default_template.id, :id => nil %>
+  <% end %>
   <ul class="ec-edit-items">
     <% items.each_with_index do |item, index| %>
       <%= render :partial => 'issues/expert_checklist_row', :locals => { :item => item, :index => index } %>
@@ -10,6 +14,16 @@
   <p class="ec-edit-actions">
     <button type="button" class="ec-add-item"><%= l(:label_expert_checklist_add_item) %></button>
     <button type="button" class="ec-add-section"><%= l(:label_expert_checklist_add_section) %></button>
+    <% if template_groups.any? %>
+      <select class="ec-template" aria-label="<%= l(:label_expert_checklist_from_template) %>">
+        <option value=""><%= l(:label_expert_checklist_from_template) %></option>
+        <% template_groups.each do |category, templates| %>
+          <% options = templates.map { |template| content_tag(:option, template.name, :value => template.id) }.join.html_safe %>
+          <%= category ? content_tag(:optgroup, options, :label => category) : options %>
+        <% end %>
+      </select>
+      <%= content_tag(:script, json_escape(expert_checklist_templates_json(template_groups)).html_safe, :type => 'application/json', :class => 'ec-templates') %>
+    <% end %>
     <em class="info"><%= l(:text_expert_checklist_editor_hint) %></em>
   </p>
   <template class="ec-row-template">
@@ -20,4 +34,4 @@
   </template>
   <span class="ec-live" aria-live="polite"></span>
 </div>
-<%= content_tag(:script, expert_checklist_config.to_json.html_safe, :type => 'application/json', :class => 'ec-config') %>
+<%= content_tag(:script, json_escape(expert_checklist_config.to_json).html_safe, :type => 'application/json', :class => 'ec-config') %>

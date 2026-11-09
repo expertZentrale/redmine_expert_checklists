@@ -16,6 +16,26 @@ unless ActiveRecord::Base.connection.table_exists?('checklists')
   end
 end
 
+# RedmineUP's template tables, same reason.
+unless ActiveRecord::Base.connection.table_exists?('checklist_template_categories')
+  ActiveRecord::Base.connection.create_table :checklist_template_categories do |t|
+    t.string :name
+    t.integer :position, :default => 1
+  end
+end
+unless ActiveRecord::Base.connection.table_exists?('checklist_templates')
+  ActiveRecord::Base.connection.create_table :checklist_templates do |t|
+    t.string :name
+    t.integer :project_id
+    t.integer :category_id
+    t.integer :user_id
+    t.boolean :is_public
+    t.text :template_items
+    t.boolean :is_default, :default => false
+    t.integer :tracker_id
+  end
+end
+
 module ExpertChecklistsTestHelper
   # Project 1 (ecookbook) with the module on; role 1 (Manager, jsmith's role
   # there) may view, tick and edit.
@@ -69,6 +89,24 @@ module ExpertChecklistsTestHelper
 
   def checklist_details(journal)
     journal.details.select { |detail| detail.property == RedmineExpertChecklists::DETAIL_PROPERTY }
+  end
+
+  def insert_legacy_template(id, project_id, name, items, options = {})
+    connection = ActiveRecord::Base.connection
+    bool = lambda { |value| value ? connection.quoted_true : connection.quoted_false }
+    connection.execute(
+      'INSERT INTO checklist_templates (id, project_id, name, template_items, category_id, user_id, is_public, ' \
+      'is_default, tracker_id) ' \
+      "VALUES (#{id.to_i}, #{project_id ? project_id.to_i : 'NULL'}, #{connection.quote(name)}, " \
+      "#{connection.quote(items)}, #{options[:category_id] ? options[:category_id].to_i : 'NULL'}, " \
+      "#{options.fetch(:user_id, 2).to_i}, #{bool.call(options.fetch(:is_public, true))}, " \
+      "#{bool.call(options[:is_default])}, #{options[:tracker_id] ? options[:tracker_id].to_i : 'NULL'})"
+    )
+  end
+
+  def add_template(attributes = {})
+    ExpertChecklistTemplate.create!({ :project_id => 1, :name => 'Template', :items => "One\nTwo",
+                                      :author_id => 2 }.merge(attributes))
   end
 
   def insert_legacy_item(id, issue_id, subject, is_done = false, position = 1, is_section = false)

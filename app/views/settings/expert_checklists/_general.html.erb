@@ -1,0 +1,36 @@
+<% settings = @settings || {} %>
+<p>
+  <label for="settings_notifications"><%= l(:label_expert_checklist_notifications) %></label>
+  <%= select_tag 'settings[notifications]',
+                 options_for_select(RedmineExpertChecklists::NOTIFICATION_MODES.map { |mode| [l("label_expert_checklist_notifications_#{mode}"), mode] },
+                                    RedmineExpertChecklists.notification_mode),
+                 :id => 'settings_notifications' %>
+  <em class="info"><%= l(:text_expert_checklist_notifications, :seconds => RedmineExpertChecklists::Recorder::BUNDLE_WINDOW.to_i) %></em>
+</p>
+<p>
+  <%= hidden_field_tag 'settings[done_ratio_from_checklist]', '0', :id => nil %>
+  <label for="settings_done_ratio_from_checklist"><%= l(:label_expert_checklist_done_ratio) %></label>
+  <%= check_box_tag 'settings[done_ratio_from_checklist]', '1', settings['done_ratio_from_checklist'].to_s == '1' %>
+  <em class="info">
+    <%= l(:text_expert_checklist_done_ratio) %>
+    <% unless Issue.use_field_for_done_ratio? %>
+      <br /><%= l(:text_expert_checklist_done_ratio_inactive) %>
+    <% end %>
+  </em>
+</p>
+<p>
+  <%= hidden_field_tag 'settings[block_issue_closing]', '0', :id => nil %>
+  <label for="settings_block_issue_closing"><%= l(:label_expert_checklist_block_closing) %></label>
+  <%= check_box_tag 'settings[block_issue_closing]', '1', settings['block_issue_closing'].to_s == '1' %>
+  <em class="info"><%= l(:text_expert_checklist_block_closing) %></em>
+</p>
+<%= hidden_field_tag 'settings[legacy_import_done_at]', settings['legacy_import_done_at'].to_s, :id => nil %>
+
+<fieldset class="box">
+  <legend><%= l(:label_expert_checklist_legacy_import) %></legend>
+  <p class="nodata-like"><%= l(:text_expert_checklist_legacy_import_intro) %></p>
+  <% if settings['legacy_import_done_at'].present? %>
+    <p><em class="info"><%= l(:text_expert_checklist_legacy_import_done_at, :time => settings['legacy_import_done_at']) %></em></p>
+  <% end %>
+  <p><%= link_to l(:label_expert_checklist_legacy_import_open), expert_checklist_legacy_import_path %></p>
+</fieldset>

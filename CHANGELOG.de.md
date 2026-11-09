@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-09
+
 ### Hinzugefügt
 
 - **Projektweise umstellen.** Die Übernahmeseite und der Rake-Task (`PROJECTS=`) stellen gewählte

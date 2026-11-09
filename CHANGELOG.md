@@ -6,7 +6,24 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Switch project by project.** The import page and the rake task (`PROJECTS=`) switch chosen
+  projects from RedmineUP Checklists while it stays installed for the others: their checklists are
+  copied again, their saved queries converted, our module switched on and RedmineUP's off - in one
+  transaction. Needs RedmineUP's permissions in a project module of their own; the README lists
+  the changes to RedmineUP this takes.
+- RedmineUP's history entries render in switched projects, and copying an issue from a project
+  still on RedmineUP takes RedmineUP's items.
+
 ### Changed
+
+- **The checklists step copies again what RedmineUP still holds.** While RedmineUP is installed,
+  issues of projects without our module are copied again, replacing an earlier copy (or removing
+  it where RedmineUP's checklist has since been emptied), instead of being skipped once copied. Once it is gone, issues with a checklist of ours are still skipped.
+- The module step also switches RedmineUP's own module off where it has one, and always copies the
+  checklists first. Next to an installed RedmineUP it is no longer preselected on the import page.
+- Import steps always run in their fixed order, whatever order they are given in.
 
 - **The tests also run on MySQL and PostgreSQL.** CI runs the suite on MariaDB for every supported
   Redmine version and, for the oldest and the newest (5.1 and 7.0), on MySQL 8.4 and PostgreSQL 17

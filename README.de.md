@@ -120,7 +120,8 @@ mit denselben Wurzelschlüsseln und Feldern und nimmt `issue[checklists_attribut
 ## Umstieg von RedmineUP Checklists
 
 Beide Plugins können nebeneinander installiert sein. Unseres bleibt unsichtbar, bis sein
-Projektmodul eingeschaltet ist; der Umstieg lässt sich also vorbereiten und proben.
+Projektmodul eingeschaltet ist; der Umstieg lässt sich also vorbereiten und proben. Die Projekte
+wechseln alle auf einmal (unten) oder [einzeln](#projektweise).
 
 1. Dieses Plugin neben RedmineUP Checklists installieren und die Migrationen laufen lassen.
 2. *Administration » expert Checklisten » Übernahme öffnen*. Die Seite zeigt, was sie gefunden hat
@@ -129,16 +130,15 @@ Projektmodul eingeschaltet ist; der Umstieg lässt sich also vorbereiten und pro
 3. Datenbank sichern, dann `plugins/redmine_checklists` entfernen und neu starten. **Nicht**
    `rake redmine:plugins:migrate NAME=redmine_checklists VERSION=0` ausführen: Das löscht die
    Tabellen von RedmineUP und damit die Daten, die übernommen werden sollen.
-4. Die Übernahme mit allen Schritten ausführen. Jeder Schritt kann noch einmal laufen; er ergänzt
-   nur, was fehlt.
+4. Die Übernahme mit allen Schritten ausführen. Jeder Schritt kann noch einmal laufen.
 
 | Schritt | Was er tut |
 |---|---|
-| Checklisten | Kopiert die Punkte jedes Tickets, das noch keine Checkliste von uns hat, **mit denselben IDs**. Punkte gelöschter Tickets und leere Punkte werden übersprungen; Texte werden auf 1000 Zeichen gekürzt. |
+| Checklisten | Kopiert die Punkte **mit denselben IDs**. Solange RedmineUP installiert ist, wird jedes Ticket eines Projekts ohne unser Modul neu kopiert und eine frühere Kopie ersetzt; ist die RedmineUP-Checkliste inzwischen leer, verschwindet auch die Kopie (dort ist RedmineUP noch in Gebrauch); sonst nur Tickets ohne Checkliste von uns. Punkte gelöschter Tickets und leere Punkte werden übersprungen; Texte werden auf 1000 Zeichen gekürzt. |
 | Berechtigungen | Jede Rolle, die RedmineUP-Checklisten ansehen, abhaken oder bearbeiten darf, bekommt die passende Berechtigung. |
 | Einstellungen | % erledigt und die Sperre beim Schließen übernehmen die Werte von RedmineUP; die Mail-Einstellung richtet sich nach dessen Benachrichtigungsereignis „Checkliste aktualisiert“. |
 | Gespeicherte Abfragen | Die Checklisten-Spalte und -Filter von RedmineUP in gespeicherten Ticket-Abfragen werden durch unsere ersetzt. Abfragen mit dem alten Filter würden ohne RedmineUP fehlschlagen. |
-| Projektmodul | Schaltet *expert Checklisten* in jedem Projekt mit Ticket-Tracking ein, und für neue Projekte. |
+| Projektmodul | Schaltet *expert Checklisten* in jedem Projekt mit Ticket-Tracking ein, und für neue Projekte. Hat RedmineUP ein eigenes Projektmodul (siehe unten), geht das dort aus. |
 
 Die Verlaufseinträge von RedmineUP werden weiter als lesbare Zeilen angezeigt („Checkliste: Punkt
 *X* erledigt“). Für große Installationen läuft dieselbe Übernahme als Rake-Task:
@@ -147,6 +147,43 @@ Die Verlaufseinträge von RedmineUP werden weiter als lesbare Zeilen angezeigt (
 bundle exec rake redmine_expert_checklists:legacy_import DRY_RUN=1 RAILS_ENV=production
 bundle exec rake redmine_expert_checklists:legacy_import RAILS_ENV=production
 ```
+
+### Projektweise
+
+Um einzelne Projekte umzustellen, während RedmineUP für die übrigen installiert bleibt, muss sich
+RedmineUP pro Projekt abschalten lassen. Von Haus aus geht das nicht: Seine Berechtigungen gehören
+zum Modul *Ticket-Tracking*. Einmal vorbereiten:
+
+1. In `plugins/redmine_checklists/init.rb` die Berechtigungen in ein eigenes Modul legen:
+   `map.project_module :checklists do |map|` statt `:issue_tracking`.
+2. Dieses Modul in jedem Projekt mit Ticket-Tracking einschalten, und für neue Projekte
+   (*Administration » Konfiguration » Projekte*), damit sich für niemanden etwas ändert.
+3. Einiges macht RedmineUP ohne Berechtigungsprüfung: die Sperre beim Schließen, % erledigt nach
+   dem Bearbeiten, das Mitkopieren der Punkte und seine Spalte in der Ticketliste. Diese Stellen
+   ebenfalls mit `project.module_enabled?(:checklists)` absichern (`need_to_block_issue_closing?`,
+   `controller_issues_edit_after_save`, `after_create_from_copy`, `checklist_relations`); sonst
+   wirken seine eingefrorenen Punkte in umgestellten Projekten weiter.
+
+Die Übernahmeseite zeigt dann *Projektweise umstellen*:
+
+1. Zuerst *Berechtigungen* und *Einstellungen* übernehmen; sie gelten für alle Projekte.
+2. Projekte wählen und umstellen. Für jedes Projekt werden in einer Transaktion die Checklisten
+   seiner Tickets neu kopiert, die gespeicherten Abfragen des Projekts umgestellt, *expert
+   Checklisten* ein- und das Modul von RedmineUP ausgeschaltet. Als Rake-Task:
+   `rake redmine_expert_checklists:legacy_import PROJECTS=eins,zwei RAILS_ENV=production`.
+3. Sind alle Projekte umgestellt, die übrigen gespeicherten Abfragen (die ohne Projekt) umstellen
+   und RedmineUP entfernen; die Übernahme muss danach nicht noch einmal laufen.
+
+Solange beide in Gebrauch sind:
+
+- Die Verlaufseinträge von RedmineUP erscheinen auch in umgestellten Projekten.
+- Wird ein Ticket aus einem Projekt, das noch RedmineUP nutzt, in ein umgestelltes kopiert, kommen
+  die Punkte von RedmineUP mit. Umgekehrt kopiert RedmineUP seine Punkte im Stand der Umstellung.
+- Die Filter von RedmineUP in der Ticketliste durchsuchen weiter alle seine Punkte, auch die
+  eingefrorenen umgestellter Projekte. Seine REST-Pfade lehnen Tickets umgestellter Projekte ab;
+  dort `/issues/:id/expert_checklist_items` verwenden.
+- Ein Projekt zurückstellen: Modul von RedmineUP ein-, unseres ausschalten. RedmineUP zeigt seine
+  Punkte im Stand der Umstellung; eine spätere Umstellung kopiert sie neu.
 
 Unterschiede zu RedmineUP Checklists:
 

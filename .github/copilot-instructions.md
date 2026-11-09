@@ -38,11 +38,13 @@ rebuild with `docker-compose -f docker-compose.yml up --build`).
   fields keep a concurrent tick from being reverted; rows of deleted items are dropped), an
   `after_save` that appends our details to core's `current_journal` (core mails it right away),
   done ratio (`before_save`), block closing (`validate`, only on `closing?`), copy
-  (`after_save` on create reading `@copied_from`). `checklists_attributes` alias only without
+  (`after_save` on create reading `@copied_from`; `copy_source_items` takes RedmineUP's rows while
+  the source's project still uses it). `checklists_attributes` alias only without
   RedmineUP.
 - History: `JournalDetail` property `expert_checklist`, `prop_key` = item id, old/new value =
-  snapshot JSON (nil = added/removed). `DetailRenderer` renders those and, once RedmineUP is gone,
-  its `attr/checklist` JSON snapshots (`LegacyDiff`, diff by id). `IssuesHelperPatch` wraps
+  snapshot JSON (nil = added/removed). `DetailRenderer` renders those and, once RedmineUP is gone
+  from the issue's project (`legacy_live?` false), its `attr/checklist` JSON snapshots (`LegacyDiff`,
+  diff by id); RedmineUP drops them where its module is off. `IssuesHelperPatch` wraps
   `details_to_strings` (everything – history, mails, PDF, Atom – goes through it);
   `JournalPatch#visible_details` hides checklist details without the view permission, which also
   keeps those users out of the mail recipients.
@@ -52,9 +54,15 @@ rebuild with `docker-compose -f docker-compose.yml up --build`).
   EXISTS subqueries ANDed with `Project.allowed_to_condition` (saved filters run even when not
   offered).
 - `lib/redmine_expert_checklists/legacy_import.rb` – RedmineUP import (plain SQL on `checklists`,
-  ids preserved, phases items / permissions / settings / queries / modules; the last two refuse
-  while RedmineUP is installed unless forced). Admin page `ExpertChecklistImportsController`,
-  rake `redmine_expert_checklists:legacy_import`.
+  ids preserved, phases items / permissions / settings / queries / modules). While RedmineUP is
+  installed it holds the checklists of every project without our module (`legacy_live?`): the
+  items step copies those issues again; afterwards only issues without items of ours.
+  `:projects` limits items, queries and modules to those projects (switch one at a time, one
+  transaction). Modules and queries refuse next to an installed RedmineUP unless it is switchable
+  per project (`legacy_switchable?`: its permissions moved out of `issue_tracking` into a module of
+  their own, which the module step switches off where ours goes on; global queries only once every
+  project is switched) or forced. Admin page `ExpertChecklistImportsController` (`switch_projects`
+  for single projects), rake `redmine_expert_checklists:legacy_import` (`PROJECTS=`).
 - `app/controllers/expert_checklist_items_controller.rb` – tick (`PUT .../done`, JSON without a
   `.json` suffix so the session counts) and the REST API; RedmineUP-compatible routes in
   `config/routes.rb` only without RedmineUP.

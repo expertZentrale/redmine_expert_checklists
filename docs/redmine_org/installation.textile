@@ -48,6 +48,8 @@ Both plugins can run side by side; ours stays invisible until its module is swit
 
 For large installations the same import runs as @bundle exec rake redmine_expert_checklists:legacy_import RAILS_ENV=production@ (@DRY_RUN=1@ to see the counts first).
 
+To switch project by project while RedmineUP stays installed for the others, RedmineUP's permissions have to move into a project module of their own first (see the README, "Project by project"). The import page then offers _Switch project by project_; the rake task takes @PROJECTS=identifier,identifier@.
+
 h3. Optional: flushing pending mails from a cron job
 
 Checklist mails wait up to a minute for further ticks. If Redmine restarts in that minute, the next checklist change sends what was left. To be independent of that, call @POST /expert_checklists/notifications/flush.json@ with an administrator's API key from an external job.

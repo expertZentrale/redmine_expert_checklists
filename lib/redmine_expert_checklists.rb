@@ -4,7 +4,8 @@
 # Everything is gated by the project module :expert_checklists. While it is off
 # in a project the plugin renders nothing there, refuses its API and ignores
 # nested attributes, so it can be installed next to RedmineUP Checklists and
-# switched on project by project (the legacy import enables it at cutover).
+# switched on project by project (the legacy import enables it, for all
+# projects at once or one project at a time).
 module RedmineExpertChecklists
   PLUGIN_ID = :redmine_expert_checklists
   MODULE = :expert_checklists
@@ -47,6 +48,40 @@ module RedmineExpertChecklists
   # is registered; it is also what RedmineUP Agile itself checks.
   def redmineup_present?
     File.exist?(File.join(Redmine::Plugin.directory.to_s, 'redmine_checklists', 'init.rb'))
+  end
+
+  # The project module RedmineUP Checklists' permissions belong to; nil when it
+  # is not loaded. Out of the box that is issue_tracking: RedmineUP cannot be
+  # switched off in a single project then. Moved to a module of their own,
+  # projects can change over one by one (see README).
+  def legacy_module
+    permission = Redmine::AccessControl.permission(:view_checklists)
+    permission ? permission.project_module.to_s : nil
+  end
+
+  def legacy_switchable?
+    name = legacy_module
+    name.nil? || (name != '' && name != 'issue_tracking')
+  end
+
+  # Whether RedmineUP still holds the project's current checklists: installed,
+  # and our module not switched on there.
+  def legacy_live?(project)
+    redmineup_present? && !enabled?(project)
+  end
+
+  # Items a copy of the issue starts with: RedmineUP's rows while it is still
+  # in use in the source's project (ours there are at best an earlier import),
+  # otherwise ours. Unsaved items in display order.
+  def copy_source_items(source)
+    if legacy_live?(source.project) && LegacyImport.available?
+      LegacyImport.items_of(source.id)
+    else
+      source.expert_checklist_items.map do |item|
+        ExpertChecklistItem.new(:subject => item.subject, :is_done => item.is_done,
+                                :is_section => item.is_section, :position => item.position)
+      end
+    end
   end
 
   def enabled?(project)

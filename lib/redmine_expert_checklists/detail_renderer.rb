@@ -1,6 +1,7 @@
 module RedmineExpertChecklists
   # Renders checklist history lines: our own per-item details and, once
-  # RedmineUP Checklists is gone, the snapshot details it left behind. Returns
+  # RedmineUP Checklists is gone (from the issue's project or altogether), the
+  # snapshot details it left behind. Returns
   # one string per change, so the history shows one list entry per item.
   #
   # Called from IssuesHelperPatch#details_to_strings, which every history view,
@@ -8,14 +9,32 @@ module RedmineExpertChecklists
   module DetailRenderer
     module_function
 
-    def handles?(detail)
-      detail.property == DETAIL_PROPERTY || legacy?(detail)
+    # issue: the issue the detail belongs to, needed for RedmineUP's details
+    # while it is installed.
+    def handles?(detail, issue = nil)
+      detail.property == DETAIL_PROPERTY || legacy?(detail, issue)
     end
 
-    # While RedmineUP is installed it renders (and hides) its own details.
-    def legacy?(detail)
+    # RedmineUP renders its own details where it is still in use and drops them
+    # where it is switched off, so they are ours once it is gone or once the
+    # issue's project has changed over to our module.
+    def legacy?(detail, issue = nil)
       detail.property == 'attr' && detail.prop_key == 'checklist' &&
-        !RedmineExpertChecklists.redmineup_present?
+        !RedmineExpertChecklists.legacy_live?(issue && issue.project)
+    end
+
+    # The issue a list of details belongs to: the journal's when it is at hand,
+    # else the one the view or mail renders (@issue). Only asked when it
+    # matters: RedmineUP installed and one of its details in the list.
+    def issue_for(details, current = nil)
+      return current unless RedmineExpertChecklists.redmineup_present?
+
+      detail = details.detect { |d| d.property == 'attr' && d.prop_key == 'checklist' }
+      return current unless detail
+      return current if current.is_a?(Issue) && !detail.association(:journal).loaded?
+
+      journal = detail.journal
+      journal && journal.journalized_type == 'Issue' ? journal.journalized : current
     end
 
     def strings(detail, no_html = false)

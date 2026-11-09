@@ -17,10 +17,10 @@ module RedmineExpertChecklists
       def visible_details(user = User.current)
         details = super
         return details unless journalized_type == 'Issue'
-        return details unless details.any? { |detail| RedmineExpertChecklists::DetailRenderer.handles?(detail) }
+        return details unless details.any? { |detail| RedmineExpertChecklists::DetailRenderer.handles?(detail, journalized) }
         return details if RedmineExpertChecklists.viewable?(journalized, user)
 
-        details.reject { |detail| RedmineExpertChecklists::DetailRenderer.handles?(detail) }
+        details.reject { |detail| RedmineExpertChecklists::DetailRenderer.handles?(detail, journalized) }
       end
 
       private

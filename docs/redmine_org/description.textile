@@ -10,7 +10,7 @@ h3. Features
 * *Copying* an issue copies its checklist, including bulk copy, project copy and subtasks.
 * *Issue list:* "Checklist" column (also CSV and PDF) and filters by item state and item text.
 * *REST API* (JSON and XML) for items, plus nested items on the issue API. Paths and field names of RedmineUP Checklists keep working once that plugin is removed.
-* *Import from RedmineUP Checklists:* items with their ids, permissions, settings, saved queries and the project module, with a dry run first. RedmineUP's history entries stay readable.
+* *Import from RedmineUP Checklists:* items with their ids, permissions, settings, saved queries and the project module, with a dry run first, for all projects at once or project by project. RedmineUP's history entries stay readable.
 * Project module *expert Checklists* with the permissions view, tick and edit.
 
 h3. Languages

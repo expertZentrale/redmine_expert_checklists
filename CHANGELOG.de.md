@@ -6,7 +6,27 @@
 
 ## [Unreleased]
 
+### Hinzugefügt
+
+- **Projektweise umstellen.** Die Übernahmeseite und der Rake-Task (`PROJECTS=`) stellen gewählte
+  Projekte von RedmineUP Checklists um, während es für die übrigen installiert bleibt: Ihre
+  Checklisten werden neu kopiert, ihre gespeicherten Abfragen umgestellt, unser Modul ein- und das
+  von RedmineUP ausgeschaltet - in einer Transaktion. Dafür müssen die Berechtigungen von RedmineUP
+  in einem eigenen Projektmodul liegen; die README nennt die nötigen Änderungen an RedmineUP.
+- Die Verlaufseinträge von RedmineUP erscheinen auch in umgestellten Projekten, und eine Kopie aus
+  einem Projekt, das noch RedmineUP nutzt, übernimmt dessen Punkte.
+
 ### Geändert
+
+- **Der Schritt Checklisten kopiert neu, was RedmineUP noch führt.** Solange RedmineUP installiert
+  ist, werden Tickets von Projekten ohne unser Modul erneut kopiert und eine frühere Kopie ersetzt
+  (oder entfernt, wenn die RedmineUP-Checkliste inzwischen leer ist), statt nach der ersten Kopie
+  übersprungen zu werden. Ist es entfernt, werden Tickets mit einer
+  Checkliste von uns weiter übersprungen.
+- Der Schritt Projektmodul schaltet auch das eigene Modul von RedmineUP aus, wo es eines hat, und
+  kopiert immer zuerst die Checklisten. Neben einem installierten RedmineUP ist er auf der
+  Übernahmeseite nicht mehr vorausgewählt.
+- Die Übernahmeschritte laufen immer in ihrer festen Reihenfolge, egal in welcher sie angegeben sind.
 
 - **Die Tests laufen auch auf MySQL und PostgreSQL.** Die CI führt die Suite für jede unterstützte
   Redmine-Version auf MariaDB aus und für die älteste und die neueste (5.1 und 7.0) zusätzlich auf

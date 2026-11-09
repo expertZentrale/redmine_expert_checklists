@@ -19,6 +19,11 @@
 - The import takes over RedmineUP's templates and categories (step *Templates*, also when
   switching single projects) and maps its *Manage checklist templates* permission.
 
+### Fixed
+
+- PostgreSQL: the RedmineUP import could fail with a duplicate key when items of both plugins had
+  the same id (side-by-side use): the ids given to those rows could hit ones just kept.
+
 ## [0.2.0] - 2026-11-09
 
 ### Added

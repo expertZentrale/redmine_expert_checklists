@@ -264,6 +264,9 @@ module RedmineExpertChecklists
           SQL
           imported += insert_items(ids, collisions, true)
           unless collisions.empty?
+            # PostgreSQL: rows inserted with their own ids leave the sequence
+            # behind them, so the new ids could hit one just kept.
+            connection.reset_pk_sequence!(ExpertChecklistItem.table_name) if connection.respond_to?(:reset_pk_sequence!)
             renumbered += insert_items(ids, collisions, false)
           end
         end

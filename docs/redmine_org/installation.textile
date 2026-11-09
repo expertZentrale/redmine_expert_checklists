@@ -23,7 +23,7 @@ git clone https://github.com/expertZentrale/redmine_expert_checklists.git
 
 h3. 2. Run the migrations
 
-Two tables: the checklist items and the pending notification mails.
+Four tables: the checklist items, the pending notification mails, the templates and their categories.
 
 <pre>
 cd /path/to/redmine

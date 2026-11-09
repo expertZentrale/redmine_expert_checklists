@@ -20,6 +20,12 @@
 - Die Übernahme kopiert die Vorlagen und Kategorien von RedmineUP (Schritt *Vorlagen*, auch beim
   projektweisen Umstellen) und überträgt dessen Berechtigung *Vorlagen verwalten*.
 
+### Behoben
+
+- PostgreSQL: Die Übernahme aus RedmineUP konnte mit einem doppelten Schlüssel abbrechen, wenn
+  Punkte beider Plugins dieselbe ID hatten (paralleler Betrieb): Die neu vergebenen IDs konnten
+  gerade übernommene treffen.
+
 ## [0.2.0] - 2026-11-09
 
 ### Hinzugefügt

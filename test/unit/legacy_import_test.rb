@@ -262,5 +262,32 @@ class LegacyImportTest < ActiveSupport::TestCase
     assert_raise(ArgumentError) { switch.run(RedmineExpertChecklists::LegacyImport::PROJECT_PHASES) }
     assert_equal 0, ExpertChecklistItem.count
   end
+
+  def test_switching_a_project_copies_items_first_whatever_the_phases
+    redmineup_installed
+    EnabledModule.create!(:project_id => 1, :name => 'checklists')
+    result = import(:projects => [Project.find(1)]).run(%w(modules))
+    assert_equal %w(items modules), result.keys
+    assert_equal 3, result['items']['imported']
+    assert Project.find(1).module_enabled?(:expert_checklists)
+  end
+
+  def test_phases_run_in_their_fixed_order
+    redmineup_installed
+    result = import(:projects => [Project.find(1)]).run(%w(modules queries items))
+    assert_equal %w(items queries modules), result.keys
+    assert_equal 3, result['items']['imported']
+  end
+
+  def test_switched_projects_without_issue_tracking_may_run_again
+    redmineup_installed
+    Project.find(1).enable_module!(:expert_checklists)
+    EnabledModule.create!(:project_id => 1, :name => 'checklists')
+    EnabledModule.where(:project_id => 1, :name => 'issue_tracking').delete_all
+    switch = import(:projects => [Project.find(1)])
+    assert_empty switch.ineligible_projects
+    assert_equal 1, switch.run(RedmineExpertChecklists::LegacyImport::PROJECT_PHASES)['modules']['redmineup_off']
+    assert_not Project.find(1).module_enabled?(:checklists)
+  end
 end
 

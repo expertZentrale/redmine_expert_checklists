@@ -72,10 +72,13 @@ module RedmineExpertChecklists
       @replace = options[:replace] && @projects.empty? ? true : false
     end
 
-    # Chosen projects without issue tracking: the module step skips them, so
-    # their items and queries would change while RedmineUP stays on.
+    # Chosen projects with neither issue tracking nor our module: the module
+    # step skips them, so their items and queries would change while
+    # RedmineUP stays on. Switched ones may run again (RedmineUP's module off).
     def ineligible_projects
-      projects.reject { |project| project.module_enabled?(:issue_tracking) }
+      projects.reject do |project|
+        project.module_enabled?(:issue_tracking) || RedmineExpertChecklists.enabled?(project)
+      end
     end
 
     def projects?
@@ -123,10 +126,14 @@ module RedmineExpertChecklists
       projects_left_ids.size
     end
 
+    # Phases run in PHASES order whatever order they are given in: items must
+    # be copied while RedmineUP still holds the issues, before modules.
     def run(phases)
-      phases = Array(phases).map(&:to_s) & PHASES
+      phases = PHASES & Array(phases).map(&:to_s)
       # Switching projects is all or nothing; a global run commits batch by batch.
       return run_phases(phases) unless projects?
+      # Switching a project on without copying its items would hide them.
+      phases = PHASES & (phases + ['items']) if phases.include?('modules')
       if ineligible_projects.any?
         raise ArgumentError, "Projects without issue tracking: #{ineligible_projects.map(&:identifier).join(', ')}"
       end

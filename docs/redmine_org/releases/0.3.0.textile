@@ -1,0 +1,16 @@
+h3. redmine_expert_checklists 0.3.0 — 2026-11-09
+
+h4. Added
+
+* Checklist templates: reusable item lists for a project (project settings, tab _Checklist templates_, new permission _Manage checklist templates_) or for all projects (plugin settings, administrators), for one tracker or all, public or private, grouped by categories.
+* "Add from template" in the issue form appends a template's items, skipping items already in the list.
+* Default templates fill new issues created with the issue form or through the REST API: project before global, tracker before all trackers. In the form an untouched default follows a change of tracker or project. Mail-created issues and copies get no default.
+* The RedmineUP import takes over its templates and categories (step _Templates_, also when switching single projects) and its template permission.
+
+h4. Changed
+
+* The plugin settings page has tabs: General, Checklist templates, Template categories.
+
+h4. Upgrade notes
+
+One new migration (templates and categories): run @rake redmine:plugins:migrate NAME=redmine_expert_checklists RAILS_ENV=production@ and restart. Grant _Manage checklist templates_ to the roles that should maintain project templates. Coming from RedmineUP: run the import's _Templates_ step (switching a project runs it for that project).

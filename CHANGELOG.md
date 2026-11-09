@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-09
+
 ### Added
 
 - **Checklist templates.** Reusable item lists for a project (project settings, tab *Checklist

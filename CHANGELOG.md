@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-09
+
 ### Added
 
 - **Switch project by project.** The import page and the rake task (`PROJECTS=`) switch chosen

@@ -363,4 +363,16 @@ class LegacyImportTest < ActiveSupport::TestCase
     import.run(%w(permissions))
     assert role.reload.permissions.include?(:manage_expert_checklist_templates)
   end
+
+  # PostgreSQL keeps a sequence that inserting rows with their own ids does not
+  # move; put it behind the kept ids, as an import leaves it.
+  def test_new_ids_do_not_hit_kept_ones
+    ExpertChecklistItem.create!(:id => 9003, :issue_id => 3, :subject => 'mine')
+    connection = ActiveRecord::Base.connection
+    if connection.adapter_name =~ /postg/i
+      connection.execute("SELECT setval(pg_get_serial_sequence('expert_checklist_items', 'id'), 9001)")
+    end
+    assert_equal 1, import.run(%w(items))['items']['new_ids']
+    assert_equal ['Second issue'], ExpertChecklistItem.where(:issue_id => 2).pluck(:subject)
+  end
 end

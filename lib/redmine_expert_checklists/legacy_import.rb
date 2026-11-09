@@ -264,13 +264,38 @@ module RedmineExpertChecklists
           SQL
           imported += insert_items(ids, collisions, true)
           unless collisions.empty?
+            # Rows inserted with their own ids leave a PostgreSQL sequence
+            # behind them, so the new ids could hit one just kept.
+            advance_pk_sequence
             renumbered += insert_items(ids, collisions, false)
           end
         end
       end
-      connection.reset_pk_sequence!(ExpertChecklistItem.table_name) if connection.respond_to?(:reset_pk_sequence!)
+      advance_pk_sequence
       @pending_issue_ids = @emptied_issue_ids = nil
       { 'imported' => imported + renumbered, 'new_ids' => renumbered, 'replaced' => replaced }
+    end
+
+    # PostgreSQL only (MySQL and MariaDB move AUTO_INCREMENT themselves): moves
+    # the items' sequence past the highest id, never back. The lock keeps
+    # inserts out while it moves: an insert takes its id only once it has the
+    # table, and the lock waits for inserts not committed yet, so neither
+    # MAX(id) nor the sequence can change underneath. Held until the
+    # surrounding transaction (an import batch) ends.
+    def advance_pk_sequence
+      return unless connection.adapter_name =~ /postg/i
+
+      table = ExpertChecklistItem.table_name
+      sequence = connection.select_value("SELECT pg_get_serial_sequence('#{table}', 'id')")
+      return if sequence.blank?
+
+      ExpertChecklistItem.transaction do
+        connection.execute("LOCK TABLE #{table} IN SHARE ROW EXCLUSIVE MODE")
+        connection.execute(
+          "SELECT setval('#{sequence}', GREATEST((SELECT COALESCE(MAX(id), 0) FROM #{table}), " \
+          "(SELECT last_value FROM #{sequence})))"
+        )
+      end
     end
 
     # keep_ids: insert every row whose id is free with that id (history JSON

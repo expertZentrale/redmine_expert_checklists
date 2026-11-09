@@ -289,5 +289,13 @@ class LegacyImportTest < ActiveSupport::TestCase
     assert_equal 1, switch.run(RedmineExpertChecklists::LegacyImport::PROJECT_PHASES)['modules']['redmineup_off']
     assert_not Project.find(1).module_enabled?(:checklists)
   end
+
+  def test_global_module_step_copies_items_first
+    redmineup_installed
+    result = import.run(%w(modules))
+    assert_equal %w(items modules), result.keys
+    assert_equal 3, result['items']['imported']
+    assert Project.find(1).module_enabled?(:expert_checklists)
+  end
 end
 

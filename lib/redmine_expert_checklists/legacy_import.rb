@@ -130,10 +130,11 @@ module RedmineExpertChecklists
     # be copied while RedmineUP still holds the issues, before modules.
     def run(phases)
       phases = PHASES & Array(phases).map(&:to_s)
+      # Switching our module on without copying the items would hide them
+      # (and RedmineUP's module goes off with it).
+      phases = PHASES & (phases + ['items']) if phases.include?('modules') && !blocked?('modules')
       # Switching projects is all or nothing; a global run commits batch by batch.
       return run_phases(phases) unless projects?
-      # Switching a project on without copying its items would hide them.
-      phases = PHASES & (phases + ['items']) if phases.include?('modules')
       if ineligible_projects.any?
         raise ArgumentError, "Projects without issue tracking: #{ineligible_projects.map(&:identifier).join(', ')}"
       end

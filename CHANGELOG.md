@@ -21,8 +21,9 @@
 - **The checklists step copies again what RedmineUP still holds.** While RedmineUP is installed,
   issues of projects without our module are copied again, replacing an earlier copy (or removing
   it where RedmineUP's checklist has since been emptied), instead of being skipped once copied. Once it is gone, issues with a checklist of ours are still skipped.
-- The module step also switches RedmineUP's own module off where it has one. Next to an installed
-  RedmineUP it is no longer preselected on the import page.
+- The module step also switches RedmineUP's own module off where it has one, and always copies the
+  checklists first. Next to an installed RedmineUP it is no longer preselected on the import page.
+- Import steps always run in their fixed order, whatever order they are given in.
 
 - **The tests also run on MySQL and PostgreSQL.** CI runs the suite on MariaDB for every supported
   Redmine version and, for the oldest and the newest (5.1 and 7.0), on MySQL 8.4 and PostgreSQL 17

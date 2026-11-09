@@ -23,8 +23,10 @@
   (oder entfernt, wenn die RedmineUP-Checkliste inzwischen leer ist), statt nach der ersten Kopie
   übersprungen zu werden. Ist es entfernt, werden Tickets mit einer
   Checkliste von uns weiter übersprungen.
-- Der Schritt Projektmodul schaltet auch das eigene Modul von RedmineUP aus, wo es eines hat. Neben
-  einem installierten RedmineUP ist er auf der Übernahmeseite nicht mehr vorausgewählt.
+- Der Schritt Projektmodul schaltet auch das eigene Modul von RedmineUP aus, wo es eines hat, und
+  kopiert immer zuerst die Checklisten. Neben einem installierten RedmineUP ist er auf der
+  Übernahmeseite nicht mehr vorausgewählt.
+- Die Übernahmeschritte laufen immer in ihrer festen Reihenfolge, egal in welcher sie angegeben sind.
 
 - **Die Tests laufen auch auf MySQL und PostgreSQL.** Die CI führt die Suite für jede unterstützte
   Redmine-Version auf MariaDB aus und für die älteste und die neueste (5.1 und 7.0) zusätzlich auf

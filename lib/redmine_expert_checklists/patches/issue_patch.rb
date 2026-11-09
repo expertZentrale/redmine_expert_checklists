@@ -163,9 +163,9 @@ module RedmineExpertChecklists
           return if @expert_checklist_form || source.nil? || source.id.nil?
           return unless RedmineExpertChecklists.enabled?(project)
 
-          source.expert_checklist_items.each do |item|
-            ExpertChecklistItem.create!(:issue_id => id, :subject => item.subject, :is_done => item.is_done,
-                                        :is_section => item.is_section, :position => item.position)
+          RedmineExpertChecklists.copy_source_items(source).each do |item|
+            item.issue_id = id
+            item.save!
           end
           expert_checklist_items.reset
         end

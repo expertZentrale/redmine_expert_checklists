@@ -3,7 +3,8 @@ require File.expand_path('../../test_helper', __FILE__)
 class DetailRendererTest < ActiveSupport::TestCase
   include ExpertChecklistsTestHelper
 
-  fixtures :projects, :users, :issues, :issue_statuses, :trackers, :projects_trackers, :enumerations
+  fixtures :projects, :users, :issues, :issue_statuses, :trackers, :projects_trackers, :enumerations,
+           :enabled_modules
 
   def setup
     User.current = nil
@@ -89,5 +90,24 @@ class DetailRendererTest < ActiveSupport::TestCase
     strings = view.details_to_strings(details, true)
     assert_include 'Checklist item Buy milk added', strings
     assert strings.any? { |s| s.include?('% Done') }
+  end
+
+  def test_legacy_details_are_ours_where_the_project_has_switched
+    RedmineExpertChecklists.stubs(:redmineup_present?).returns(true)
+    legacy = detail('[]', '[]', 'attr', 'checklist')
+    assert_not RedmineExpertChecklists::DetailRenderer.handles?(legacy, Issue.find(1))
+    Project.find(1).enable_module!(:expert_checklists)
+    assert RedmineExpertChecklists::DetailRenderer.handles?(legacy, Issue.find(1))
+  end
+
+  def test_details_to_strings_renders_legacy_details_of_a_switched_project
+    RedmineExpertChecklists.stubs(:redmineup_present?).returns(true)
+    Project.find(1).enable_module!(:expert_checklists)
+    view = ActionView::Base.respond_to?(:empty) ? ActionView::Base.empty : ActionView::Base.new
+    view.extend(IssuesHelper)
+    view.instance_variable_set(:@issue, Issue.find(1))
+    old = [{ 'id' => 1, 'subject' => 'a', 'is_done' => false }].to_json
+    new = [{ 'id' => 1, 'subject' => 'a', 'is_done' => true }].to_json
+    assert_equal ['Checklist item a done'], view.details_to_strings([detail(old, new, 'attr', 'checklist')], true)
   end
 end

@@ -111,7 +111,8 @@ keys and fields, and accepts `issue[checklists_attributes]`.
 ## Moving from RedmineUP Checklists
 
 Both plugins can be installed side by side. Ours stays invisible until its project module is
-switched on, so the switch can be prepared and rehearsed.
+switched on, so the switch can be prepared and rehearsed. Projects change over all at once (below)
+or [one at a time](#project-by-project).
 
 1. Install this plugin next to RedmineUP Checklists and run the migrations.
 2. Open *Administration » expert Checklists » Open the import*. The page shows what it found
@@ -120,15 +121,15 @@ switched on, so the switch can be prepared and rehearsed.
 3. Take a database backup, then remove `plugins/redmine_checklists` and restart. **Do not** run
    `rake redmine:plugins:migrate NAME=redmine_checklists VERSION=0`: that drops RedmineUP's
    tables, and with them the data to import.
-4. Run the import with all steps. Each step can run again; it only adds what is missing.
+4. Run the import with all steps. Each step can run again.
 
 | Step | What it does |
 |---|---|
-| Checklists | Copies the items of every issue that has no checklist of ours yet, **with the same ids**. Items of deleted issues and empty items are skipped; texts are cut to 1000 characters. |
+| Checklists | Copies the items **with the same ids**. While RedmineUP is installed, every issue of a project without our module is copied again, replacing an earlier copy (RedmineUP is still in use there); otherwise only issues without a checklist of ours. Items of deleted issues and empty items are skipped; texts are cut to 1000 characters. |
 | Permissions | Every role that may view, tick or edit RedmineUP checklists gets the matching permission. |
 | Settings | Done ratio and block-closing take RedmineUP's values; the mail setting follows its "Checklist updated" notification event. |
 | Saved queries | RedmineUP's checklist column and filters in saved issue queries are replaced by ours. Queries that kept the old filter would fail once RedmineUP is gone. |
-| Project module | Switches *expert Checklists* on in every project that uses issue tracking, and for new projects. |
+| Project module | Switches *expert Checklists* on in every project that uses issue tracking, and for new projects. Where RedmineUP has a project module of its own (see below), that one goes off. |
 
 RedmineUP's own history entries keep rendering as readable lines ("Checklist item *X* done").
 For large installations the same import runs as a rake task:
@@ -137,6 +138,43 @@ For large installations the same import runs as a rake task:
 bundle exec rake redmine_expert_checklists:legacy_import DRY_RUN=1 RAILS_ENV=production
 bundle exec rake redmine_expert_checklists:legacy_import RAILS_ENV=production
 ```
+
+### Project by project
+
+To move single projects while RedmineUP stays installed for the others, RedmineUP must be
+switchable per project. Out of the box it is not: its permissions belong to the *Issue tracking*
+module. Prepare it once:
+
+1. In `plugins/redmine_checklists/init.rb`, put the permissions into a module of their own:
+   `map.project_module :checklists do |map|` instead of `:issue_tracking`.
+2. Switch that module on in every project that uses issue tracking, and for new projects
+   (*Administration » Settings » Projects*), so nothing changes for anyone yet.
+3. RedmineUP does a few things without asking for a permission: blocking the close, recalculating
+   the done ratio after an edit, copying items with an issue, and its issue list column. Guard
+   them with `project.module_enabled?(:checklists)` as well (`need_to_block_issue_closing?`,
+   `controller_issues_edit_after_save`, `after_create_from_copy`, `checklist_relations`);
+   otherwise its frozen items keep acting in switched projects.
+
+The import page then shows *Switch project by project*:
+
+1. Import *Permissions* and *Settings* first; they apply to all projects.
+2. Choose projects and switch them. For each one, in a single transaction, this copies the
+   checklists of its issues again, converts the project's saved queries, switches *expert
+   Checklists* on and RedmineUP's module off. As a rake task:
+   `rake redmine_expert_checklists:legacy_import PROJECTS=one,two RAILS_ENV=production`.
+3. Once every project is switched, convert the remaining saved queries (those without a project)
+   and remove RedmineUP; the import does not need to run again.
+
+While both are in use:
+
+- RedmineUP's own history entries render in switched projects too.
+- Copying an issue from a project still on RedmineUP into a switched one takes RedmineUP's
+  items. The other way round, RedmineUP copies its items as they were at the switch.
+- RedmineUP's issue list filters still search all of its items, including the frozen ones of
+  switched projects. Its REST paths refuse issues of switched projects; use
+  `/issues/:id/expert_checklist_items` there.
+- To switch a project back, turn RedmineUP's module on and ours off: RedmineUP shows its items as
+  they were at the switch, and a later switch copies them again.
 
 Differences to RedmineUP Checklists:
 

@@ -13,6 +13,8 @@ post 'expert_checklists/notifications/flush', :to => 'expert_checklist_notificat
 get 'expert_checklists/legacy_import', :to => 'expert_checklist_imports#show',
                                        :as => 'expert_checklist_legacy_import'
 post 'expert_checklists/legacy_import', :to => 'expert_checklist_imports#create'
+post 'expert_checklists/legacy_import/projects', :to => 'expert_checklist_imports#switch_projects',
+                                                :as => 'expert_checklist_legacy_import_projects'
 
 # RedmineUP Checklists' REST paths, for clients written against it. Drawn only
 # without RedmineUP (a file test: routes are drawn before every plugin is

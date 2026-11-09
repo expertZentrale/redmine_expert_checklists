@@ -1,20 +1,33 @@
 module RedmineExpertChecklists
   # Takes over what RedmineUP Checklists left in the database. Reads its tables
   # with plain SQL - the plugin itself may already be gone - and writes ours.
-  # Every phase can run again: items are imported per issue only while that
-  # issue has none of ours, permissions and modules are only added, queries
+  # Every phase can run again: permissions and modules are only added, queries
   # only rewritten where they still name RedmineUP's columns and filters.
   #
   #   import = LegacyImport.new
   #   import.report                      # counts, nothing written
   #   import.run(%w(items permissions))  # report after writing
+  #   LegacyImport.new(:projects => [project]).run(LegacyImport::PROJECT_PHASES)
   #
-  # Phases that change what users see (saved queries, modules) refuse to run
-  # while RedmineUP is still installed, unless forced: switching the module on
-  # next to RedmineUP would show two checklists on every issue.
+  # Which side holds an issue's current checklist: while RedmineUP is
+  # installed, RedmineUP does in every project where our module is off, so the
+  # items step copies those issues again, replacing what an earlier run copied.
+  # In projects with our module on, and everywhere once RedmineUP is gone, ours
+  # do: only issues without items of ours are imported.
+  #
+  # With :projects, items, saved queries and the module step only touch those
+  # projects. That switches projects over one at a time while RedmineUP stays
+  # installed, which needs its permissions in a project module of their own
+  # (RedmineExpertChecklists.legacy_switchable?); the module step switches that
+  # one off where it switches ours on. Steps that change what users see refuse
+  # otherwise, unless forced: our module next to an active RedmineUP shows two
+  # checklists on every issue, and saved queries converted while projects
+  # still use RedmineUP find nothing there.
   class LegacyImport
     PHASES = %w(items permissions settings queries modules).freeze
     NEEDS_REDMINEUP_GONE = %w(queries modules).freeze
+    # Switching single projects; permissions and settings are global steps.
+    PROJECT_PHASES = %w(items queries modules).freeze
     BATCH = 500
 
     PERMISSIONS = {
@@ -26,7 +39,7 @@ module RedmineExpertChecklists
     FILTERS = { 'checklists_status' => 'expert_checklist_status',
                 'checklists_item' => 'expert_checklist_item' }.freeze
 
-    attr_reader :force
+    attr_reader :force, :projects
 
     def self.available?
       connection.table_exists?('checklists')
@@ -36,42 +49,91 @@ module RedmineExpertChecklists
       ActiveRecord::Base.connection
     end
 
+    # RedmineUP's items of one issue as unsaved items of ours, in its order;
+    # what a copy of an issue still using RedmineUP starts with.
+    def self.items_of(issue_id)
+      section = connection.column_exists?(:checklists, :is_section) ? 'is_section' : connection.quoted_false
+      rows = connection.select_rows(
+        "SELECT subject, is_done, #{section}, position FROM checklists " \
+        "WHERE issue_id = #{issue_id.to_i} ORDER BY position, id"
+      )
+      rows.reject { |subject, *| subject.to_s.strip.empty? }.map do |subject, is_done, is_section, position|
+        ExpertChecklistItem.new(:subject => subject.to_s.strip[0, RedmineExpertChecklists::SUBJECT_MAX],
+                                :is_done => is_done, :is_section => is_section, :position => position)
+      end
+    end
+
+    # options: :force, :replace (see the rake task), :projects (Project
+    # records or ids; limits items, queries and modules to them).
     def initialize(options = {})
       @force = options[:force] ? true : false
       @replace = options[:replace] ? true : false
+      @projects = Array(options[:projects]).compact.map { |project| project.is_a?(Project) ? project : Project.find(project) }
+    end
+
+    def projects?
+      projects.any?
     end
 
     def blocked?(phase)
-      NEEDS_REDMINEUP_GONE.include?(phase) && RedmineExpertChecklists.redmineup_present? && !force
+      return false if force || !RedmineExpertChecklists.redmineup_present?
+
+      case phase
+      when 'modules'
+        !RedmineExpertChecklists.legacy_switchable?
+      when 'queries'
+        !(RedmineExpertChecklists.legacy_switchable? && (projects? || projects_left.zero?))
+      else
+        false
+      end
+    end
+
+    # Switching single projects needs RedmineUP switchable per project.
+    def switch_blocked?
+      blocked?('modules')
     end
 
     # What a run would do. Never writes.
     def report
       result = { 'redmineup_installed' => RedmineExpertChecklists.redmineup_present?,
-                 'legacy_table' => self.class.available? }
+                 'legacy_table' => self.class.available?,
+                 'switchable' => RedmineExpertChecklists.legacy_switchable? }
       result.merge!(items_report) if result['legacy_table']
       result['roles'] = roles_to_update.size
       result['queries'] = queries_to_convert.size
       result['projects'] = projects_to_enable.size
+      result['projects_switched'] = EnabledModule.where(:name => RedmineExpertChecklists::MODULE.to_s).count
       result['settings'] = mapped_settings
       result
     end
 
+    # Projects that use issue tracking and do not have our module yet.
+    def projects_left_ids
+      projects_to_enable
+    end
+
+    def projects_left
+      projects_left_ids.size
+    end
+
     def run(phases)
       phases = Array(phases).map(&:to_s) & PHASES
+      # Switching projects is all or nothing; a global run commits batch by batch.
+      return run_phases(phases) unless projects?
+
+      ActiveRecord::Base.transaction { run_phases(phases) }
+    end
+
+    private
+
+    def run_phases(phases)
       done = {}
       phases.each do |phase|
-        if blocked?(phase)
-          done[phase] = 'blocked'
-          next
-        end
-        done[phase] = send("import_#{phase}")
+        done[phase] = blocked?(phase) ? 'blocked' : send("import_#{phase}")
       end
       stamp unless done.empty?
       done
     end
-
-    private
 
     def connection
       self.class.connection
@@ -81,23 +143,36 @@ module RedmineExpertChecklists
       connection.column_exists?(:checklists, name)
     end
 
+    def project_ids
+      projects.map(&:id)
+    end
+
+    # SQL condition on issues aliased i, limiting a run to its projects.
+    def project_condition
+      projects? ? " AND i.project_id IN (#{project_ids.join(',')})" : ''
+    end
+
     # ---- items -----------------------------------------------------------
 
     def items_report
-      orphans = connection.select_value(
-        'SELECT COUNT(*) FROM checklists c LEFT JOIN issues i ON i.id = c.issue_id WHERE i.id IS NULL'
-      ).to_i
+      orphans =
+        if projects?
+          0
+        else
+          connection.select_value(
+            'SELECT COUNT(*) FROM checklists c LEFT JOIN issues i ON i.id = c.issue_id WHERE i.id IS NULL'
+          ).to_i
+        end
+      existing = "FROM checklists c INNER JOIN issues i ON i.id = c.issue_id WHERE 1=1#{project_condition}"
       blank = connection.select_value(
-        "SELECT COUNT(*) FROM checklists WHERE subject IS NULL OR TRIM(subject) = ''"
+        "SELECT COUNT(*) #{existing} AND (c.subject IS NULL OR TRIM(c.subject) = '')"
       ).to_i
       long = connection.select_value(
-        "SELECT COUNT(*) FROM checklists WHERE LENGTH(subject) > #{RedmineExpertChecklists::SUBJECT_MAX}"
+        "SELECT COUNT(*) #{existing} AND LENGTH(c.subject) > #{RedmineExpertChecklists::SUBJECT_MAX}"
       ).to_i
-      issues = connection.select_value(
-        'SELECT COUNT(DISTINCT c.issue_id) FROM checklists c INNER JOIN issues i ON i.id = c.issue_id'
-      ).to_i
+      issues = connection.select_value("SELECT COUNT(DISTINCT c.issue_id) #{existing}").to_i
       {
-        'legacy_items' => connection.select_value('SELECT COUNT(*) FROM checklists').to_i,
+        'legacy_items' => connection.select_value("SELECT COUNT(*) #{existing}").to_i + orphans,
         'legacy_issues' => issues,
         'orphan_items' => orphans,
         'blank_items' => blank,
@@ -107,14 +182,25 @@ module RedmineExpertChecklists
       }
     end
 
-    # Legacy issues that exist and have none of our items yet.
+    # Legacy issues that exist and whose checklist RedmineUP still holds (see
+    # the class comment): while it is installed, those in projects without our
+    # module; afterwards, those without items of ours.
     def pending_issue_ids
-      @pending_issue_ids ||= connection.select_values(<<~SQL).map(&:to_i)
-        SELECT DISTINCT c.issue_id FROM checklists c
-        INNER JOIN issues i ON i.id = c.issue_id
-        WHERE NOT EXISTS (SELECT 1 FROM #{ExpertChecklistItem.table_name} e WHERE e.issue_id = c.issue_id)
-        ORDER BY c.issue_id
-      SQL
+      @pending_issue_ids ||= begin
+        condition =
+          if RedmineExpertChecklists.redmineup_present?
+            "i.project_id NOT IN (SELECT em.project_id FROM #{EnabledModule.table_name} em " \
+            "WHERE em.name = '#{RedmineExpertChecklists::MODULE}')"
+          else
+            "NOT EXISTS (SELECT 1 FROM #{ExpertChecklistItem.table_name} e WHERE e.issue_id = c.issue_id)"
+          end
+        connection.select_values(<<~SQL).map(&:to_i)
+          SELECT DISTINCT c.issue_id FROM checklists c
+          INNER JOIN issues i ON i.id = c.issue_id
+          WHERE #{condition}#{project_condition}
+          ORDER BY c.issue_id
+        SQL
+      end
     end
 
     def import_items
@@ -123,8 +209,11 @@ module RedmineExpertChecklists
       replace_existing if @replace
       imported = 0
       renumbered = 0
+      replaced = 0
       pending_issue_ids.each_slice(BATCH) do |ids|
         ExpertChecklistItem.transaction do
+          # An earlier copy of an issue RedmineUP still holds is out of date.
+          replaced += ExpertChecklistItem.where(:issue_id => ids).delete_all
           collisions = connection.select_values(<<~SQL).map(&:to_i)
             SELECT c.id FROM checklists c
             INNER JOIN #{ExpertChecklistItem.table_name} e ON e.id = c.id
@@ -138,7 +227,7 @@ module RedmineExpertChecklists
       end
       connection.reset_pk_sequence!(ExpertChecklistItem.table_name) if connection.respond_to?(:reset_pk_sequence!)
       @pending_issue_ids = nil
-      { 'imported' => imported + renumbered, 'new_ids' => renumbered }
+      { 'imported' => imported + renumbered, 'new_ids' => renumbered, 'replaced' => replaced }
     end
 
     # keep_ids: insert every row whose id is free with that id (history JSON
@@ -241,8 +330,11 @@ module RedmineExpertChecklists
 
     # ---- saved queries ---------------------------------------------------
 
+    # With :projects, only queries of those projects; global ones follow once
+    # every project has been switched.
     def queries_to_convert
-      IssueQuery.all.to_a.select do |query|
+      scope = projects? ? IssueQuery.where(:project_id => project_ids) : IssueQuery.all
+      scope.to_a.select do |query|
         (query.column_names || []).any? { |name| COLUMNS.key?(name.to_sym) } ||
           (query.filters || {}).keys.any? { |field| FILTERS.key?(field.to_s) }
       end
@@ -281,17 +373,40 @@ module RedmineExpertChecklists
 
     def projects_to_enable
       enabled = EnabledModule.where(:name => RedmineExpertChecklists::MODULE.to_s).select(:project_id)
-      EnabledModule.where(:name => 'issue_tracking').where.not(:project_id => enabled).pluck(:project_id)
+      scope = EnabledModule.where(:name => 'issue_tracking').where.not(:project_id => enabled)
+      scope = scope.where(:project_id => project_ids) if projects?
+      scope.pluck(:project_id)
     end
 
+    # RedmineUP's own module, when it has one; never issue_tracking.
+    def legacy_module_name
+      name = RedmineExpertChecklists.legacy_module
+      name if RedmineExpertChecklists.legacy_switchable? && name.present?
+    end
+
+    # Ours on, RedmineUP's own module off: one checklist per issue. A global
+    # run also changes the modules new projects start with.
     def import_modules
+      ours = RedmineExpertChecklists::MODULE.to_s
       ids = projects_to_enable
-      ids.each { |id| EnabledModule.create!(:project_id => id, :name => RedmineExpertChecklists::MODULE.to_s) }
-      defaults = Setting.default_projects_modules
-      if defaults.include?('issue_tracking') && !defaults.include?(RedmineExpertChecklists::MODULE.to_s)
-        Setting.default_projects_modules = defaults + [RedmineExpertChecklists::MODULE.to_s]
+      ids.each { |id| EnabledModule.create!(:project_id => id, :name => ours) }
+      switched_off = 0
+      if (legacy = legacy_module_name)
+        # Ids first: MySQL cannot delete from a table it reads in a subquery.
+        switched = EnabledModule.where(:name => ours).pluck(:project_id)
+        switched &= project_ids if projects?
+        switched_off = EnabledModule.where(:name => legacy, :project_id => switched).delete_all
       end
-      { 'projects' => ids.size }
+      update_default_modules(ours, legacy) unless projects?
+      { 'projects' => ids.size, 'redmineup_off' => switched_off }
+    end
+
+    def update_default_modules(ours, legacy)
+      defaults = Setting.default_projects_modules
+      updated = defaults.dup
+      updated += [ours] if updated.include?('issue_tracking') && !updated.include?(ours)
+      updated -= [legacy] if legacy && updated.include?(ours)
+      Setting.default_projects_modules = updated if updated != defaults
     end
 
     def stamp

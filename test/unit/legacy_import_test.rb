@@ -7,6 +7,9 @@ class LegacyImportTest < ActiveSupport::TestCase
            :trackers, :projects_trackers, :enumerations, :enabled_modules, :queries
 
   def setup
+    # As without RedmineUP (GitHub CI); tests that need it installed say so.
+    RedmineExpertChecklists.stubs(:redmineup_present?).returns(false)
+    RedmineExpertChecklists.stubs(:legacy_module).returns(nil)
     ActiveRecord::Base.connection.execute('DELETE FROM checklists')
     insert_legacy_item(9001, 1, ' Buy milk ', true, 1)
     insert_legacy_item(9002, 1, 'Shopping', false, 1, true)
@@ -17,6 +20,12 @@ class LegacyImportTest < ActiveSupport::TestCase
 
   def import(options = {})
     RedmineExpertChecklists::LegacyImport.new(options)
+  end
+
+  # RedmineUP installed; switchable: its permissions in a module of their own.
+  def redmineup_installed(switchable = true)
+    RedmineExpertChecklists.stubs(:redmineup_present?).returns(true)
+    RedmineExpertChecklists.stubs(:legacy_module).returns(switchable ? 'checklists' : 'issue_tracking')
   end
 
   def test_report_counts_without_writing
@@ -31,7 +40,7 @@ class LegacyImportTest < ActiveSupport::TestCase
 
   def test_items_keep_their_ids_and_skip_orphans_and_blanks
     result = import.run(%w(items))
-    assert_equal({ 'imported' => 3, 'new_ids' => 0 }, result['items'])
+    assert_equal({ 'imported' => 3, 'new_ids' => 0, 'replaced' => 0 }, result['items'])
     item = ExpertChecklistItem.find(9001)
     assert_equal ['Buy milk', 1, true, false], [item.subject, item.issue_id, item.is_done, item.is_section]
     assert ExpertChecklistItem.find(9002).is_section?
@@ -43,11 +52,11 @@ class LegacyImportTest < ActiveSupport::TestCase
 
   def test_items_run_again_imports_nothing
     import.run(%w(items))
-    assert_equal({ 'imported' => 0, 'new_ids' => 0 }, import.run(%w(items))['items'])
+    assert_equal({ 'imported' => 0, 'new_ids' => 0, 'replaced' => 0 }, import.run(%w(items))['items'])
     assert_equal 3, ExpertChecklistItem.count
   end
 
-  def test_issues_that_already_have_items_of_ours_are_skipped
+  def test_once_redmineup_is_gone_issues_with_items_of_ours_are_skipped
     ExpertChecklistItem.create!(:issue_id => 1, :subject => 'mine')
     import.run(%w(items))
     assert_equal ['mine'], ExpertChecklistItem.where(:issue_id => 1).pluck(:subject)
@@ -129,9 +138,94 @@ class LegacyImportTest < ActiveSupport::TestCase
   end
 
   def test_queries_and_modules_wait_for_redmineup_to_be_removed
-    RedmineExpertChecklists.stubs(:redmineup_present?).returns(true)
+    redmineup_installed(false)
     result = import.run(%w(queries modules))
     assert_equal({ 'queries' => 'blocked', 'modules' => 'blocked' }, result)
     assert_not Project.find(1).module_enabled?(:expert_checklists)
+  end
+
+  def test_while_redmineup_is_in_use_its_issues_are_copied_again
+    redmineup_installed
+    ExpertChecklistItem.create!(:issue_id => 1, :subject => 'stale copy')
+    result = import.run(%w(items))['items']
+    assert_equal 1, result['replaced']
+    assert_equal ['Buy milk', 'Shopping'], ExpertChecklistItem.where(:issue_id => 1).order(:position, :id).pluck(:subject)
+  end
+
+  def test_projects_with_our_module_keep_their_items
+    redmineup_installed
+    Project.find(1).enable_module!(:expert_checklists)
+    ExpertChecklistItem.create!(:issue_id => 1, :subject => 'mine')
+    import.run(%w(items))
+    assert_equal ['mine'], ExpertChecklistItem.where(:issue_id => 1).pluck(:subject)
+    assert_equal 0, ExpertChecklistItem.where(:issue_id => 2).count
+  end
+
+  def test_switching_a_project_touches_only_that_project
+    redmineup_installed
+    other = Issue.where.not(:project_id => 1).first
+    insert_legacy_item(9010, other.id, 'Elsewhere')
+    [1, other.project_id].each { |id| EnabledModule.create!(:project_id => id, :name => 'checklists') }
+    mine = IssueQuery.new(:name => 'Mine', :project_id => 1, :user_id => 2,
+                          :column_names => [:subject, :checklist_relations])
+    mine.save!(:validate => false)
+    theirs = IssueQuery.new(:name => 'Theirs', :project_id => other.project_id, :user_id => 2,
+                            :column_names => [:subject, :checklist_relations])
+    theirs.save!(:validate => false)
+
+    with_settings(:default_projects_modules => %w(issue_tracking checklists)) do
+      result = import(:projects => [Project.find(1)]).run(RedmineExpertChecklists::LegacyImport::PROJECT_PHASES)
+      assert_equal 3, result['items']['imported']
+      assert_equal({ 'queries' => 1 }, result['queries'])
+      assert_equal({ 'projects' => 1, 'redmineup_off' => 1 }, result['modules'])
+      assert_equal %w(issue_tracking checklists), Setting.default_projects_modules
+    end
+    assert_equal 0, ExpertChecklistItem.where(:issue_id => other.id).count
+    assert_equal [:subject, :expert_checklist], mine.reload.column_names
+    assert_equal [:subject, :checklist_relations], theirs.reload.column_names
+    switched = Project.find(1)
+    assert switched.module_enabled?(:expert_checklists)
+    assert_not switched.module_enabled?(:checklists)
+    assert Project.find(other.project_id).module_enabled?(:checklists)
+    assert_not Project.find(other.project_id).module_enabled?(:expert_checklists)
+  end
+
+  def test_global_module_step_swaps_the_modules_of_new_projects
+    redmineup_installed
+    EnabledModule.create!(:project_id => 1, :name => 'checklists')
+    with_settings(:default_projects_modules => %w(issue_tracking checklists wiki)) do
+      import.run(%w(modules))
+      assert_equal %w(issue_tracking wiki expert_checklists), Setting.default_projects_modules
+    end
+    assert_not Project.find(1).module_enabled?(:checklists)
+    assert Project.find(1).module_enabled?(:expert_checklists)
+  end
+
+  def test_switching_needs_redmineup_in_a_module_of_its_own
+    redmineup_installed(false)
+    switch = import(:projects => [Project.find(1)])
+    assert switch.switch_blocked?
+    result = switch.run(RedmineExpertChecklists::LegacyImport::PROJECT_PHASES)
+    assert_equal 'blocked', result['modules']
+    assert_equal 'blocked', result['queries']
+    assert_not Project.find(1).module_enabled?(:expert_checklists)
+  end
+
+  def test_global_queries_wait_until_every_project_is_switched
+    redmineup_installed
+    assert import.blocked?('queries')
+    EnabledModule.where(:name => 'issue_tracking').pluck(:project_id).each do |id|
+      EnabledModule.create!(:project_id => id, :name => 'expert_checklists')
+    end
+    assert_not import.blocked?('queries')
+  end
+
+  def test_items_of_reads_redmineup_rows_for_a_copy
+    items = RedmineExpertChecklists::LegacyImport.items_of(1)
+    assert_equal ['Buy milk', 'Shopping'], items.map(&:subject)
+    assert_equal [true, false], items.map(&:is_done)
+    assert items.last.is_section?
+    assert items.all?(&:new_record?)
+    assert_equal ['Second issue'], RedmineExpertChecklists::LegacyImport.items_of(2).map(&:subject)
   end
 end

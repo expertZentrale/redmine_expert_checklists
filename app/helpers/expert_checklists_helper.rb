@@ -28,12 +28,7 @@ module ExpertChecklistsHelper
     items = issue.expert_checklist_items.reject(&:marked_for_destruction?)
     if items.empty? && issue.new_record? && issue.expert_checklist_form.nil?
       source = issue.expert_checklists_copy_source
-      if source && source.id
-        items = source.expert_checklist_items.map do |item|
-          ExpertChecklistItem.new(:subject => item.subject, :is_done => item.is_done,
-                                  :is_section => item.is_section, :position => item.position)
-        end
-      end
+      items = RedmineExpertChecklists.copy_source_items(source) if source && source.id
     end
     items.sort_by.with_index { |item, index| [item.position.to_i, index] }
   end

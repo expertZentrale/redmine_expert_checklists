@@ -210,4 +210,24 @@ class IssuesControllerChecklistTest < Redmine::ControllerTest
     assert_equal ['Prep', 'Buy milk', 'Bake <bread>'], copy.reload.expert_checklist_items.map(&:subject)
     assert copy.expert_checklist_items[1].is_done?
   end
+
+  def test_copy_from_a_project_still_on_redmineup_takes_its_rows
+    RedmineExpertChecklists.stubs(:redmineup_present?).returns(true)
+    ActiveRecord::Base.connection.execute('DELETE FROM checklists')
+    source = Issue.where.not(:project_id => 1).first
+    assert_not RedmineExpertChecklists.enabled?(source.project)
+    insert_legacy_item(9101, source.id, 'From RedmineUP', true, 1)
+    insert_legacy_item(9102, source.id, 'Second', false, 2)
+    ExpertChecklistItem.create!(:issue_id => source.id, :subject => 'stale copy')
+
+    User.current = User.find(1)
+    copy = Issue.new.copy_from(source)
+    copy.project = Project.find(1)
+    copy.assigned_to = nil
+    copy.author = User.find(2)
+    copy.save!
+    assert_equal ['From RedmineUP', 'Second'], copy.reload.expert_checklist_items.map(&:subject)
+    assert copy.expert_checklist_items.first.is_done?
+  end
 end
+

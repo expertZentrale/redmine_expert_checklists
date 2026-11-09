@@ -23,8 +23,10 @@
     <tbody>
       <% RedmineExpertChecklists::LegacyImport::PHASES.each do |phase| %>
         <% blocked = @import.blocked?(phase) %>
+        <%# Next to an installed RedmineUP, switching every project at once is a choice, not the default. %>
+        <% checked = !blocked && !(@report['redmineup_installed'] && RedmineExpertChecklists::LegacyImport::NEEDS_REDMINEUP_GONE.include?(phase)) %>
         <tr>
-          <td><%= check_box_tag 'phases[]', phase, !blocked, :id => "phase_#{phase}", :disabled => blocked %></td>
+          <td><%= check_box_tag 'phases[]', phase, checked, :id => "phase_#{phase}", :disabled => blocked %></td>
           <td>
             <label for="phase_<%= phase %>"><strong><%= l("label_expert_checklist_import_phase_#{phase}") %></strong></label><br />
             <em class="info"><%= l("text_expert_checklist_import_phase_#{phase}") %></em>
@@ -54,7 +56,7 @@
               <%= l(:text_expert_checklist_import_projects, :count => @report['projects']) %>
             <% end %>
             <% if blocked %>
-              <br /><em class="info"><%= l(:text_expert_checklist_import_blocked) %></em>
+              <br /><em class="info"><%= l(phase == 'queries' ? :text_expert_checklist_import_queries_blocked : :text_expert_checklist_import_blocked) %></em>
             <% end %>
           </td>
         </tr>
@@ -62,6 +64,26 @@
     </tbody>
   </table>
   <p><%= submit_tag l(:button_expert_checklist_import_run), :data => { :confirm => l(:text_are_you_sure) } %></p>
+<% end %>
+
+<% if @report['redmineup_installed'] %>
+  <h3><%= l(:label_expert_checklist_import_projects) %></h3>
+  <p><%= l(:text_expert_checklist_import_projects_intro) %></p>
+  <p><%= l(:text_expert_checklist_import_projects_status,
+           :switched => @report['projects_switched'], :left => @projects_left.size) %></p>
+  <% if @import.switch_blocked? %>
+    <p class="warning"><%= l(:text_expert_checklist_import_not_switchable) %></p>
+  <% elsif @projects_left.any? %>
+    <%= form_tag(expert_checklist_legacy_import_projects_path, :method => :post, :id => 'expert-checklist-switch') do %>
+      <p>
+        <label for="expert_checklist_project_ids"><%= l(:label_project_plural) %></label><br />
+        <%= select_tag 'project_ids[]', project_tree_options_for_select(@projects_left),
+                       :multiple => true, :size => [@projects_left.size, 12].min,
+                       :id => 'expert_checklist_project_ids' %>
+      </p>
+      <p><%= submit_tag l(:button_expert_checklist_import_switch), :data => { :confirm => l(:text_are_you_sure) } %></p>
+    <% end %>
+  <% end %>
 <% end %>
 
 <% html_title(l(:label_expert_checklist_legacy_import)) %>

@@ -1,7 +1,8 @@
 module RedmineExpertChecklists
   module Patches
     # Renders checklist history entries (ours, and RedmineUP's legacy ones once
-    # that plugin is gone) as one line per changed item. Every place core lists
+    # that plugin is gone or switched off in the issue's project) as one line
+    # per changed item. Every place core lists
     # journal details goes through details_to_strings: the history tab, both
     # notification mail formats, the PDF export and the journals Atom feed.
     #
@@ -14,7 +15,8 @@ module RedmineExpertChecklists
 
         original = base.instance_method(:details_to_strings)
         base.send(:define_method, :details_to_strings) do |details, no_html = false, options = {}|
-          ours, rest = details.partition { |detail| RedmineExpertChecklists::DetailRenderer.handles?(detail) }
+          issue = RedmineExpertChecklists::DetailRenderer.issue_for(details, @issue)
+          ours, rest = details.partition { |detail| RedmineExpertChecklists::DetailRenderer.handles?(detail, issue) }
           strings = original.bind(self).call(rest, no_html, options)
           ours.each { |detail| strings.concat(RedmineExpertChecklists::DetailRenderer.strings(detail, no_html)) }
           strings

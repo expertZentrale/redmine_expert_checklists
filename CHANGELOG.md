@@ -6,6 +6,17 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Checklist templates.** Reusable item lists for a project (project settings, tab *Checklist
+  templates*, permission *Manage checklist templates*) or for all projects (plugin settings,
+  administrators), for one tracker or all, public or private, grouped by categories. The issue form
+  appends one with *Add from template*. A default template fills new issues created with the form
+  or through the REST API: project before global, tracker before all trackers. An untouched default
+  follows a change of tracker or project in the form.
+- The import takes over RedmineUP's templates and categories (step *Templates*, also when
+  switching single projects) and maps its *Manage checklist templates* permission.
+
 ## [0.2.0] - 2026-11-09
 
 ### Added

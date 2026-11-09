@@ -1,0 +1,24 @@
+<%= error_messages_for 'checklist_template' %>
+<div class="box tabular">
+  <p><%= f.text_field :name, :size => 60, :required => true %></p>
+  <% categories = ExpertChecklistTemplateCategory.sorted.to_a %>
+  <% if categories.any? %>
+    <p><%= f.select :category_id, categories.map { |category| [category.name, category.id] }, :include_blank => true %></p>
+  <% end %>
+  <% trackers = @project ? @project.trackers.sorted.to_a : Tracker.sorted.to_a %>
+  <p><%= f.select :tracker_id, trackers.map { |tracker| [tracker.name, tracker.id] }, :include_blank => l(:label_all) %></p>
+  <p>
+    <label><%= l(:field_visible) %></label>
+    <label class="block"><%= f.radio_button :is_public, true %> <%= l(:label_visibility_public) %></label>
+    <label class="block"><%= f.radio_button :is_public, false %> <%= l(:label_visibility_private) %></label>
+  </p>
+  <p>
+    <%= f.check_box :is_default, :label => :field_expert_checklist_template_is_default %>
+    <em class="info"><%= l(@project ? :text_expert_checklist_template_default : :text_expert_checklist_template_default_global) %></em>
+  </p>
+  <p>
+    <%= f.text_area :items, :label => :field_expert_checklist_template_items, :rows => 14, :cols => 60,
+                    :required => true, :class => 'wiki-edit' %>
+    <em class="info"><%= l(:text_expert_checklist_template_items) %></em>
+  </p>
+</div>

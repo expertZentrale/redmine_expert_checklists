@@ -1,0 +1,7 @@
+<% crumb = @project ? [l(:label_expert_checklist_templates), settings_project_path(@project, :tab => 'expert_checklist_templates')] : [l(:label_expert_checklists), plugin_settings_path('redmine_expert_checklists', :tab => 'templates')] %>
+<%= title crumb, @checklist_template.name %>
+<%= labelled_form_for @checklist_template, :as => :expert_checklist_template,
+                      :url => expert_checklist_template_path(@checklist_template), :html => { :method => :patch } do |f| %>
+  <%= render :partial => 'form', :locals => { :f => f } %>
+  <%= submit_tag l(:button_save) %>
+<% end %>

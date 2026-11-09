@@ -49,3 +49,9 @@ ul.ec-col li.ec-section { font-weight: bold; }
 /* RedmineUP import page */
 #expert-checklist-import table.list td { text-align: left; vertical-align: top; }
 #expert-checklist-import table.list td:first-child { width: 2em; text-align: center; }
+
+/* Issue form: "Add from template" */
+.expert-checklist-editor select.ec-template { margin-left: .5em; max-width: 24em; }
+
+/* Plugin settings: template and category tabs (inside the tabular settings box) */
+.ec-tab-intro { margin: .5em 0 1em; }

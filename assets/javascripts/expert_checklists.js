@@ -225,6 +225,10 @@
 
   function initAll() {
     $('[data-ec-editor]').each(function () { initEditor(this); });
+    // Template categories on the settings page: core's drag-and-drop reordering.
+    if ($.fn.positionedItems) {
+      $('table.ec-template-categories tbody').not('.ui-sortable').positionedItems();
+    }
     $('[data-ec-list]').each(function () {
       updateProgress($(this));
       applyHideDone($(this));
@@ -290,6 +294,29 @@
       $after = addRow($editor, $after, item.section, item.subject);
       $after.find('input.ec-edit-check').prop('checked', item.done);
     });
+  });
+
+  // "Add from template": appends the template's items that are not in the list
+  // yet (same text), like a paste of its lines. Rows come from script.ec-templates.
+  $(document).on('change', '[data-ec-editor] select.ec-template', function () {
+    var $editor = $(this).closest('[data-ec-editor]');
+    var id = this.value;
+    this.value = '';
+    if (!id) { return; }
+    var templates;
+    try { templates = JSON.parse($editor.find('script.ec-templates').text()); } catch (e) { return; }
+    var seen = existingSubjects($editor);
+    var $after = visibleRows($editor).last();
+    var added = 0;
+    (templates[id] || []).forEach(function (row) {
+      var key = $.trim(row.subject).toLowerCase();
+      if (!key || seen[key]) { return; }
+      seen[key] = true;
+      $after = addRow($editor, $after, !!row.is_section, row.subject);
+      $after.find('input.ec-edit-check').prop('checked', !!row.is_done);
+      added += 1;
+    });
+    announce($editor, label('templateAdded').replace('%{count}', String(added)));
   });
 
   $(document).on('submit', 'form', function () {

@@ -13,6 +13,14 @@ post 'expert_checklists/notifications/flush', :to => 'expert_checklist_notificat
 get 'expert_checklists/legacy_import', :to => 'expert_checklist_imports#show',
                                        :as => 'expert_checklist_legacy_import'
 post 'expert_checklists/legacy_import', :to => 'expert_checklist_imports#create'
+# Templates: project ones are created from the project settings, global ones
+# (no project) from the plugin settings; categories are global.
+resources :projects, :only => [] do
+  resources :expert_checklist_templates, :only => [:new, :create]
+end
+resources :expert_checklist_templates, :only => [:new, :create, :edit, :update, :destroy]
+resources :expert_checklist_template_categories, :only => [:new, :create, :edit, :update, :destroy]
+
 post 'expert_checklists/legacy_import/projects', :to => 'expert_checklist_imports#switch_projects',
                                                 :as => 'expert_checklist_legacy_import_projects'
 

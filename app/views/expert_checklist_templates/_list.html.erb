@@ -1,0 +1,37 @@
+<% if templates.any? %>
+  <table class="list ec-templates">
+    <thead>
+      <tr>
+        <th><%= l(:field_name) %></th>
+        <th><%= l(:field_category) %></th>
+        <th><%= l(:field_tracker) %></th>
+        <th><%= l(:field_expert_checklist_template_is_default) %></th>
+        <th><%= l(:field_visible) %></th>
+        <th><%= l(:field_expert_checklist_template_items) %></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% templates.each do |template| %>
+        <% editable = template.editable_by?(User.current) %>
+        <tr>
+          <td class="name"><%= editable ? link_to(template.name, edit_expert_checklist_template_path(template)) : template.name %></td>
+          <td><%= template.category %></td>
+          <td><%= template.tracker || l(:label_all) %></td>
+          <td><%= checked_image template.is_default? %></td>
+          <td><%= template.is_public? ? l(:label_visibility_public) : l(:label_visibility_private) %></td>
+          <td><%= template.rows.size %></td>
+          <td class="buttons">
+            <% if editable %>
+              <%= link_to expert_checklist_icon('del', l(:button_delete)), expert_checklist_template_path(template),
+                          :method => :delete, :data => { :confirm => l(:text_are_you_sure) },
+                          :class => 'icon icon-del' %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <p class="nodata"><%= l(:label_no_data) %></p>
+<% end %>

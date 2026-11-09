@@ -229,5 +229,76 @@ class IssuesControllerChecklistTest < Redmine::ControllerTest
     assert_equal ['From RedmineUP', 'Second'], copy.reload.expert_checklist_items.map(&:subject)
     assert copy.expert_checklist_items.first.is_done?
   end
-end
 
+  def add_default_template(attributes = {})
+    add_template({ :name => 'Bug default', :items => "-- Check\nReproduce\nFix", :is_default => true,
+                   :tracker_id => 1 }.merge(attributes))
+  end
+
+  def default_rows
+    { '0' => { 'subject' => 'Check', 'is_section' => '1' }, '1' => { 'subject' => 'Reproduce' },
+      '2' => { 'subject' => 'Fix' } }
+  end
+
+  def test_new_form_starts_with_the_default_template
+    template = add_default_template
+    get :new, :params => { :project_id => 1, :issue => { :tracker_id => 1 } }
+    assert_response :success
+    assert_select '[data-ec-editor] input.ec-subject-input[value=?]', 'Reproduce'
+    assert_select '[data-ec-editor] input[name=?][value=?]', 'issue[expert_checklist_template_id]', template.id.to_s
+  end
+
+  def test_untouched_default_follows_a_tracker_change
+    bug = add_default_template
+    add_default_template(:tracker_id => 2, :name => 'Feature default', :items => "Spec\nBuild")
+    post :new, :params => { :project_id => 1, :format => 'js',
+                            :issue => { :tracker_id => 2, :expert_checklist_form => '1',
+                                        :expert_checklist_template_id => bug.id.to_s,
+                                        :expert_checklist_items_attributes => default_rows } }, :xhr => true
+    assert_response :success
+    assert_include 'value=\\"Spec\\"', response.body
+    assert_not_include 'value=\\"Reproduce\\"', response.body
+  end
+
+  def test_edited_default_stays_on_a_tracker_change
+    bug = add_default_template
+    add_default_template(:tracker_id => 2, :name => 'Feature default', :items => "Spec\nBuild")
+    rows = default_rows.merge('3' => { 'subject' => 'Mine' })
+    post :new, :params => { :project_id => 1, :format => 'js',
+                            :issue => { :tracker_id => 2, :expert_checklist_form => '1',
+                                        :expert_checklist_template_id => bug.id.to_s,
+                                        :expert_checklist_items_attributes => rows } }, :xhr => true
+    assert_response :success
+    assert_include 'value=\\"Mine\\"', response.body
+    assert_include 'value=\\"Reproduce\\"', response.body
+    assert_not_include 'value=\\"Spec\\"', response.body
+  end
+
+  def test_create_without_checklist_rows_starts_with_the_default
+    add_default_template
+    # dlopper (Developer) may add issues but has no checklist permission: no editor, no rows.
+    @request.session[:user_id] = 3
+    post :create, :params => { :project_id => 1, :issue => { :tracker_id => 1, :subject => 'No editor' } }
+    issue = Issue.order(:id).last
+    assert_equal 'No editor', issue.subject
+    assert_equal %w(Check Reproduce Fix), issue.expert_checklist_items.map(&:subject)
+  end
+
+  def test_create_with_an_emptied_editor_gets_no_default
+    add_default_template
+    post :create, :params => { :project_id => 1,
+                               :issue => { :tracker_id => 1, :subject => 'Emptied', :expert_checklist_form => '1' } }
+    issue = Issue.order(:id).last
+    assert_equal 'Emptied', issue.subject
+    assert_empty issue.expert_checklist_items.to_a
+  end
+
+  def test_template_menu_lists_the_available_templates
+    add_template(:name => 'Release steps', :items => "Tag\nAnnounce")
+    add_template(:name => 'Other tracker', :tracker_id => 2)
+    get :new, :params => { :project_id => 1, :issue => { :tracker_id => 1 } }
+    assert_select '[data-ec-editor] select.ec-template option', :text => 'Release steps'
+    assert_select '[data-ec-editor] select.ec-template option', :text => 'Other tracker', :count => 0
+    assert_select '[data-ec-editor] script.ec-templates'
+  end
+end

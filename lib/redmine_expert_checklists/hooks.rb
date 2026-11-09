@@ -16,6 +16,13 @@ module RedmineExpertChecklists
                                           :locals => { :issue => issue })
     end
 
+    # Core calls this in IssuesController#create for the form and the REST API
+    # alike - not for mail-created issues, which get no default, as before.
+    def controller_issues_new_before_save(context = {})
+      issue = context[:issue]
+      issue.expert_checklists_apply_default_template if issue.respond_to?(:expert_checklists_apply_default_template)
+    end
+
     def view_issues_form_details_bottom(context = {})
       issue = context[:issue]
       return '' unless RedmineExpertChecklists.editable?(issue)

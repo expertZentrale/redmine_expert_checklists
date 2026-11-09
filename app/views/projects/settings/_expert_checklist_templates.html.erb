@@ -1,0 +1,14 @@
+<% templates = ExpertChecklistTemplate.where(:project_id => @project.id).includes(:category, :tracker, :author).sorted %>
+<% templates = templates.usable_by(User.current) unless User.current.admin? %>
+<p>
+  <%= link_to expert_checklist_icon('add', l(:label_expert_checklist_template_new)),
+              new_project_expert_checklist_template_path(@project), :class => 'icon icon-add' %>
+</p>
+<%= render :partial => 'expert_checklist_templates/list', :locals => { :templates => templates.to_a } %>
+
+<% global = ExpertChecklistTemplate.global.usable_by(User.current).includes(:category, :tracker).sorted.to_a %>
+<% if global.any? %>
+  <h3><%= l(:label_expert_checklist_templates_global) %></h3>
+  <p><em class="info"><%= l(:text_expert_checklist_templates_global_in_project) %></em></p>
+  <%= render :partial => 'expert_checklist_templates/list', :locals => { :templates => global } %>
+<% end %>

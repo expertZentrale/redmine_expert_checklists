@@ -1,0 +1,37 @@
+<%# Template categories; links and drag handles only: this tab sits inside the plugin settings form. %>
+<div class="contextual">
+  <%= link_to expert_checklist_icon('add', l(:label_expert_checklist_template_category_new)),
+              new_expert_checklist_template_category_path, :class => 'icon icon-add' %>
+</div>
+<div class="ec-tab-intro"><%= l(:text_expert_checklist_template_categories) %></div>
+<% categories = ExpertChecklistTemplateCategory.sorted.to_a %>
+<% if categories.any? %>
+  <table class="list ec-template-categories">
+    <thead>
+      <tr>
+        <th><%= l(:field_name) %></th>
+        <th><%= l(:label_expert_checklist_templates) %></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% counts = ExpertChecklistTemplate.where(:category_id => categories.map(&:id)).group(:category_id).count %>
+      <% categories.each do |category| %>
+        <tr>
+          <td class="name"><%= link_to category.name, edit_expert_checklist_template_category_path(category) %></td>
+          <td><%= counts[category.id].to_i %></td>
+          <td class="buttons">
+            <%= reorder_handle(category, :url => expert_checklist_template_category_path(category),
+                                         :param => 'expert_checklist_template_category') %>
+            <%= link_to expert_checklist_icon('del', l(:button_delete)),
+                        expert_checklist_template_category_path(category),
+                        :method => :delete, :data => { :confirm => l(:text_are_you_sure) },
+                        :class => 'icon icon-del' %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <p class="nodata"><%= l(:label_no_data) %></p>
+<% end %>

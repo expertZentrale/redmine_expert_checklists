@@ -5,8 +5,9 @@ different tools — **keep them in sync when either changes.**
 
 Checklists on Redmine issues, replacing RedmineUP Checklists PRO. Items and sections, ticking on
 the issue page, an editor in the issue form, history, bundled notification mails, REST API, issue
-list column and filters, and an import from RedmineUP's tables. Two migrations (items, pending
-notifications), project module `:expert_checklists` (permissions view / done / edit), settings
+list column and filters, templates, and an import from RedmineUP's tables. Three migrations (items,
+pending notifications, templates + categories), project module `:expert_checklists` (permissions
+view / done / edit / manage templates), settings
 `notifications`, `done_ratio_from_checklist`, `block_issue_closing`, `legacy_import_done_at`.
 
 This directory lives inside the parent `redmine-expert` deployment repo (`../../`). It is
@@ -63,6 +64,19 @@ rebuild with `docker-compose -f docker-compose.yml up --build`).
   their own, which the module step switches off where ours goes on; global queries only once every
   project is switched) or forced. Admin page `ExpertChecklistImportsController` (`switch_projects`
   for single projects), rake `redmine_expert_checklists:legacy_import` (`PROJECTS=`).
+- Templates: `ExpertChecklistTemplate` (`items` text in the editor's paste format, `parse` mirrors
+  the script's `parseLines`; `available_for` = project + global, tracker + all, public or own;
+  `default_for` = project before global, tracker before all, never someone else's private one) and
+  `ExpertChecklistTemplateCategory` (`acts_as_positioned`). Defaults: the form editor
+  (`expert_checklist_form_items` – new issue, untouched default swapped on a form refresh via the
+  `expert_checklist_template_id` hidden field) and core's `controller_issues_new_before_save` hook
+  (`Issue#expert_checklists_apply_default_template` – form and REST API create, not mail or copy;
+  no wrapping of `build_new_issue_from_params`). Management: `ExpertChecklistTemplatesController`
+  (project templates: manage permission + module; global: admins),
+  `ExpertChecklistTemplateCategoriesController` (admins; `update` also answers core's
+  `positionedItems` reorder), project settings tab via `ProjectsHelperPatch`, plugin settings as
+  tabs (`settings/expert_checklists/_general|_templates|_categories`). The import phase `templates`
+  matches by project + name (categories by name), no ids preserved.
 - `app/controllers/expert_checklist_items_controller.rb` – tick (`PUT .../done`, JSON without a
   `.json` suffix so the session counts) and the REST API; RedmineUP-compatible routes in
   `config/routes.rb` only without RedmineUP.
@@ -91,7 +105,8 @@ rebuild with `docker-compose -f docker-compose.yml up --build`).
   (redmine_checklists, redmine_contacts_helpdesk), `IssuesController#build_new_issue_from_params`
   (redmine_checklists, redmine_contacts_helpdesk), `Journal#send_notification` and
   `Issue#after_create_from_copy` (redmine_checklists), `Issue#copy_from` (redmine_agile),
-  `ProjectsHelper#project_settings_tabs` (several). We wrap none of the last five.
+  `ProjectsHelper#project_settings_tabs` (several). We wrap none of the four before the last;
+  `project_settings_tabs` only by capture (`ProjectsHelperPatch`).
 - No inline `<script>`: data crosses as a JSON island, URLs as data attributes.
 - Item subjects render with `textilizable(..., :formatting => false)` (escaped text plus Redmine
   links), never through the wiki formatter.

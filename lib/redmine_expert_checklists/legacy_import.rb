@@ -276,9 +276,10 @@ module RedmineExpertChecklists
       { 'imported' => imported + renumbered, 'new_ids' => renumbered, 'replaced' => replaced }
     end
 
-    # PostgreSQL only (MySQL and MariaDB move AUTO_INCREMENT themselves): puts
-    # the items' sequence past the highest id, never back - another request
-    # may hold an id it took from the sequence but has not committed yet.
+    # PostgreSQL only (MySQL and MariaDB move AUTO_INCREMENT themselves): moves
+    # the items' sequence past the highest id by drawing values from it.
+    # nextval never goes back, so an id another request takes meanwhile stays
+    # its own - setval to a computed value could undo it.
     def advance_pk_sequence
       return unless connection.adapter_name =~ /postg/i
 
@@ -286,10 +287,11 @@ module RedmineExpertChecklists
       sequence = connection.select_value("SELECT pg_get_serial_sequence('#{table}', 'id')")
       return if sequence.blank?
 
-      connection.execute(
-        "SELECT setval('#{sequence}', GREATEST((SELECT COALESCE(MAX(id), 0) FROM #{table}), " \
-        "(SELECT last_value FROM #{sequence})))"
-      )
+      max = connection.select_value("SELECT COALESCE(MAX(id), 0) FROM #{table}").to_i
+      last, called = connection.select_rows("SELECT last_value, is_called FROM #{sequence}").first
+      next_value = (called == true || called.to_s == 't') ? last.to_i + 1 : last.to_i
+      draws = max - next_value + 1
+      connection.select_value("SELECT MAX(nextval('#{sequence}')) FROM generate_series(1, #{draws})") if draws > 0
     end
 
     # keep_ids: insert every row whose id is free with that id (history JSON

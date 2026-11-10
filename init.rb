@@ -35,7 +35,7 @@ Redmine::Plugin.register :redmine_expert_checklists do
   name 'Redmine expert Checklists'
   author 'Dennis Buehring'
   description 'Checklists on issues: tick items on the issue page, edit them in the issue form, see every change in the history and get one bundled mail instead of one per click. Templates, REST API, issue list column and filters, import from RedmineUP Checklists.'
-  version '0.3.0'
+  version '0.3.1'
   url 'https://github.com/expertZentrale/redmine_expert_checklists'
   requires_redmine :version_or_higher => '5.0'
 

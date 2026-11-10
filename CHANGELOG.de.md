@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-10
+
 ### Behoben
 
 - Die Standardvorlage füllt das Ticketformular jetzt auch, wenn es ohne Standard geöffnet wurde und

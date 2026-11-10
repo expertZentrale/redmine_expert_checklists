@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-10
+
 ### Fixed
 
 - The default template now also fills the issue form when the form opened without one and the

@@ -275,9 +275,16 @@ class IssuesControllerChecklistTest < Redmine::ControllerTest
   end
 
   # The form opened with a tracker without a default (empty editor, no
-  # template id), then the tracker changed to one with a default.
+  # template id), then the tracker changed to one with a default: the refresh
+  # posts the editor's marker field and nothing else of ours.
   def test_default_fills_an_empty_editor_on_a_tracker_change
     bug = add_default_template
+    get :new, :params => { :project_id => 1, :issue => { :tracker_id => 2 } }
+    assert_response :success
+    assert_select '[data-ec-editor] input[name=?]', 'issue[expert_checklist_form]'
+    assert_select '[data-ec-editor] input[name=?]', 'issue[expert_checklist_template_id]', 0
+    assert_select '[data-ec-editor] ul.ec-edit-items input.ec-subject-input', 0
+
     post :new, :params => { :project_id => 1, :format => 'js',
                             :issue => { :tracker_id => 1, :expert_checklist_form => '1' } }, :xhr => true
     assert_response :success

@@ -94,8 +94,8 @@ A template is a list of items in the same format as a paste into the editor: one
   project's for the tracker, the project's for all trackers, the global one for the tracker, the
   global one for all trackers. This applies to issues created with the form and through the REST
   API, also when the author has no checklist permission. Issues created from mails and copies get
-  no default. In the form, an untouched default follows a change of tracker or project; once the
-  list was edited, it stays.
+  no default. In the form, an empty list gets the default and an untouched default follows a change
+  of tracker or project; once the list was edited or emptied, it stays.
 
 ## Issue list
 

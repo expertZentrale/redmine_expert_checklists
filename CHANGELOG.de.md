@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+### Behoben
+
+- Die Standardvorlage füllt das Ticketformular jetzt auch, wenn es ohne Standard geöffnet wurde und
+  Tracker oder Projekt auf einen mit Standard gewechselt werden (etwa in einem Projekt, dessen erster
+  Tracker keinen Standard hat). Eine vom Benutzer geleerte Standardvorlage bleibt bei weiteren
+  Wechseln leer.
+
 ## [0.3.0] - 2026-11-09
 
 ### Hinzugefügt

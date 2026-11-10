@@ -65,11 +65,13 @@ rebuild with `docker-compose -f docker-compose.yml up --build`).
   the script's `parseLines`; `available_for` = project + global, tracker + all, public or own;
   `default_for` = project before global, tracker before all, never someone else's private one) and
   `ExpertChecklistTemplateCategory` (`acts_as_positioned`). Defaults: the form editor
-  (`expert_checklist_form_items` – new issue, untouched default swapped on a form refresh via the
-  `expert_checklist_template_id` hidden field) and core's `controller_issues_new_before_save` hook
-  (`Issue#expert_checklists_apply_default_template` – form and REST API create, not mail or copy;
-  no wrapping of `build_new_issue_from_params`). Management: `ExpertChecklistTemplatesController`
-  (project templates: manage permission + module; global: admins),
+  (`expert_checklist_form_items` – new issue; on a form refresh an empty editor no default filled
+  yet gets one, an untouched default is swapped, an edited or emptied one stays – the
+  `expert_checklist_template_id` hidden field tells which default the rows came from) and core's
+  `controller_issues_new_before_save` hook (`Issue#expert_checklists_apply_default_template` – form
+  and REST API create, not mail or copy; no wrapping of `build_new_issue_from_params`).
+  Management: `ExpertChecklistTemplatesController` (project templates: manage permission + module;
+  global: admins),
   `ExpertChecklistTemplateCategoriesController` (admins; `update` also answers core's
   `positionedItems` reorder), project settings tab via `ProjectsHelperPatch`, plugin settings as
   tabs (`settings/expert_checklists/_general|_templates|_categories`). The import phase `templates`

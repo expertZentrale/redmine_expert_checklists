@@ -24,16 +24,21 @@ module ExpertChecklistsHelper
   # Items the form editor starts with: the in-memory association (it carries
   # the user's unsaved rows when the form is re-rendered after a refresh or a
   # validation error), the source issue's items on a copy form, or on a new
-  # issue the default template. A default the user has not touched follows a
-  # change of tracker or project. Sets @expert_checklist_default_template.
+  # issue the default template. The default fills an editor that is empty and
+  # was not filled by a default before, also on a refresh (the tracker or
+  # project changed); a default the user has not touched follows such a
+  # change, one the user edited or emptied stays. Sets
+  # @expert_checklist_default_template, the default the rows came from, which
+  # the form carries along.
   def expert_checklist_form_items(issue)
     @expert_checklist_default_template = nil
     items = issue.expert_checklist_items.reject(&:marked_for_destruction?)
     if issue.new_record?
       applied = issue.expert_checklist_template_id.presence &&
                 ExpertChecklistTemplate.find_by(:id => issue.expert_checklist_template_id)
-      untouched = applied && applied.matches?(items)
-      if (items.empty? && issue.expert_checklist_form.nil?) || untouched
+      if applied && !applied.matches?(items)
+        @expert_checklist_default_template = applied
+      elsif applied || items.empty?
         source = issue.expert_checklists_copy_source
         if source && source.id
           items = RedmineExpertChecklists.copy_source_items(source)
@@ -41,7 +46,7 @@ module ExpertChecklistsHelper
           default = ExpertChecklistTemplate.default_for(issue.project, issue.tracker)
           @expert_checklist_default_template = default
           # Same default again: keep the rows, ticks included.
-          items = default ? default.build_items : [] unless untouched && default == applied
+          items = default ? default.build_items : [] unless applied && default == applied
         end
       end
     end

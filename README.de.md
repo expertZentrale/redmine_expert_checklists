@@ -103,8 +103,9 @@ pro Zeile, `-- ` beginnt einen Abschnitt, `[x] ` markiert einen Punkt als erledi
   Reihenfolge: die des Projekts für den Tracker, die des Projekts für alle Tracker, die globale für
   den Tracker, die globale für alle Tracker. Das gilt für Tickets aus dem Formular und über die
   REST-API, auch wenn der Autor keine Checklisten-Berechtigung hat. Tickets aus Mails und Kopien
-  bekommen keinen Standard. Im Formular folgt ein unveränderter Standard einem Wechsel von Tracker
-  oder Projekt; wurde die Liste bearbeitet, bleibt sie.
+  bekommen keinen Standard. Im Formular bekommt eine leere Liste den Standard, und ein unveränderter
+  Standard folgt einem Wechsel von Tracker oder Projekt; wurde die Liste bearbeitet oder geleert,
+  bleibt sie.
 
 ## Ticketliste
 

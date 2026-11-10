@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- The default template now also fills the issue form when the form opened without one and the
+  tracker or project is changed to one with a default (for example, a project whose first tracker
+  has no default). A default the user emptied stays empty on later changes.
+
 ## [0.3.0] - 2026-11-09
 
 ### Added
